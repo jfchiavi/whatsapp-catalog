@@ -1,0 +1,10 @@
+/* src/styles/index.css */
+
+@import "tailwindcss";
+
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+}
