@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16 # Usa una versión específica en lugar de latest
+    container_name: postgres_db
+    restart: always
+    environment:
+      # Estas variables se cargarán automáticamente desde el archivo .env
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      # Mapea el puerto 5432 del contenedor al puerto 5432 de tu máquina local
+      - "5432:5432"
+    volumes:
+      # Persiste los datos de la base de datos en un volumen local
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
