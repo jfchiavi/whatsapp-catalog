@@ -1,11 +1,6 @@
 {
   "compilerOptions": {
-  "baseUrl": "src", // Base de donde parten las rutas
-  "paths": {
-      "@/*": ["*"] // Mapea todo lo que empiece con @/ a la carpeta src/
-      // También puedes ser más específico, por ejemplo:
-      // "@components/*": ["src/components/*"]
-    }
+
   },
   "files": [],
   "references": [

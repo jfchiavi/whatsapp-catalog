@@ -1,7 +1,7 @@
 import { useSearchParams } from "react-router-dom";
-import { PRODUCTS } from "../../data/products";
-import { Header } from "../../components/header/Header";
-import { ProductCard } from "../../components/product/ProductCard";
+import { PRODUCTS } from "../../../data/products";
+import { Header } from "../../../components/header/Header";
+import { ProductCard } from "../../../components/product/ProductCard";
 
 export default function SearchResults() {
   const [params] = useSearchParams();

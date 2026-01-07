@@ -3,7 +3,7 @@ import { StockBadge } from '../../components/dashboard/ui/StockBadge';
 
 
 export default function StockPage() {
-    const productId = 'prod-001'; // selector real luego
+    const productId = 'prod-1'; // selector real luego
     const { data, isLoading } = useStock(productId);
 
 

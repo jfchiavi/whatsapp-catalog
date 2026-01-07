@@ -1,9 +1,9 @@
 import { useParams, Link } from "react-router-dom";
-import { PRODUCTS } from "../../data/products";
-import { Header } from "../../components/header/Header";
-import { ProductGallery } from "../../components/product/ProductGallery";
-import { QuantitySelector } from "../../components/product/QuantitySelector";
-import { ProductActions } from "../../components/product/ProductActions";
+import { PRODUCTS } from "../../../data/products";
+import { Header } from "../../../components/header/Header";
+import { ProductGallery } from "../../../components/product/ProductGallery";
+import { QuantitySelector } from "../../../components/product/QuantitySelector";
+import { ProductActions } from "../../../components/product/ProductActions";
 import { useState } from "react";
 
 export default function ProductDetail() {

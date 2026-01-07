@@ -1,6 +1,6 @@
-import { PRODUCTS } from "../../data/products";
-import { ProductCard } from "../../components/product/ProductCard";
-import { Header } from "../../components/header/Header";
+import { PRODUCTS } from "@/data/products";
+import { ProductCard } from "@/components/product/ProductCard";
+import { Header } from "@/components/header/Header";
 
 export default function Home() {
   return (
