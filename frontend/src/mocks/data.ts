@@ -10,10 +10,21 @@ export interface MockProduct {
   minStock?: Record<string, number>;
 }
 
+export interface MockProduct2 {
+  id: string;
+  sku: string;
+  name: string;
+  price: number;
+  cost: number;
+  active: boolean;
+  createdAt: string;
+}
+
 export const mockData : {
   users: any[];
   branches: any[];
   products: MockProduct[];
+  products2: MockProduct2[];
   whatsappOrders: any[];
 } = {
   users: [
@@ -58,7 +69,17 @@ export const mockData : {
       },
     },
   ],
-
+  products2: [
+    {
+      id: 'prod-001',
+      sku: 'SKU-001',
+      name: 'Producto Demo',
+      price: 100,
+      cost: 60,
+      active: true,
+      createdAt: new Date().toISOString(),
+    },
+  ],
   whatsappOrders: [
     {
       id: 'wa-001',

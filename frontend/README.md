@@ -493,3 +493,35 @@ Stock web
 Ahí cerramos el círculo:
 
 Mensaje → pedido → venta → stock → comprobante
+
+
+## La ProductsPage va a tener:
+```text
+✅ Tabla profesional
+
+columnas claras
+
+acciones por fila
+
+loading / empty / error states
+
+responsive
+
+✅ ABM completo
+
+Crear producto (modal)
+
+Editar producto (modal)
+
+Eliminar producto (confirmación)
+
+✅ Buenas prácticas
+
+React Query
+
+invalidación de cache
+
+optimistic UX
+
+backend real
+```

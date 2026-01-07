@@ -1,45 +1,89 @@
-import { useQuery } from '@tanstack/react-query';
-import { fetchProducts } from '../../services/api';
-import { StockBadge } from '../../components/dashboard/ui/StockBadge';
-
+import { useState } from 'react';
+import { CreateProductModal } from './CreateProductModal';
+import {
+  useProducts,
+  useCreateProduct,
+  useDeleteProduct,
+} from '@/hooks/useProducts';
 
 export default function ProductsPage() {
-    const { data, isLoading } = useQuery({
-        queryKey: ['products'],
-        queryFn: fetchProducts,
-    });
+  const { data, isLoading, error } = useProducts();
+  const createMutation = useCreateProduct();
+  const deleteMutation = useDeleteProduct();
 
-    if (isLoading) return <div>Cargando productos...</div>;
+  const [showCreate, setShowCreate] = useState(false);
 
-    return (
-            <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                    <h1 className="text-xl font-bold">Productos</h1>
-                    <button className="bg-black text-white px-4 py-2 rounded">Nuevo</button>
-                </div>
+  if (isLoading) return <p>Cargando productos...</p>;
+  if (error) return <p>Error al cargar productos</p>;
 
-                <table className="w-full bg-white border rounded">
-                    <thead className="bg-gray-100">
-                        <tr>
-                            <th className="p-2 text-left">SKU</th>
-                            <th className="p-2 text-left">Nombre</th>
-                            <th className="p-2">Stock Web</th>
-                            <th className="p-2">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {data?.map((p: any) => (
-                        <tr key={p.id} className="border-t">
-                        <td className="p-2">{p.sku}</td>
-                        <td className="p-2">{p.name}</td>
-                        <td className="p-2 text-center">
-                        <StockBadge quantity={p.stock['branch-web']} min={p.minStock?.['branch-web']} />
-                        </td>
-                        <td className="p-2 text-center">👁️ ✏️</td>
-                        </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        );
+  return (
+    <div className="p-6 space-y-6">
+      <header className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Productos</h1>
+        <button
+          onClick={() => setShowCreate(true)}
+          className="px-4 py-2 rounded-lg bg-black text-white hover:bg-gray-800"
+        >
+          Nuevo producto
+        </button>
+      </header>
+
+      <div className="overflow-x-auto rounded-xl border">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-50 text-left">
+            <tr>
+              <th className="p-3">SKU</th>
+              <th className="p-3">Nombre</th>
+              <th className="p-3">Precio</th>
+              <th className="p-3">Costo</th>
+              <th className="p-3">Estado</th>
+              <th className="p-3 text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data?.map((product) => (
+              <tr key={product.id} className="border-t">
+                <td className="p-3">{product.sku}</td>
+                <td className="p-3">{product.name}</td>
+                <td className="p-3">${product.price}</td>
+                <td className="p-3">${product.cost}</td>
+                <td className="p-3">
+                  <span
+                    className={`px-2 py-1 rounded text-xs ${
+                      product.active
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-red-100 text-red-700'
+                    }`}
+                  >
+                    {product.active ? 'Activo' : 'Inactivo'}
+                  </span>
+                </td>
+                <td className="p-3 text-right space-x-2">
+                  <button className="text-blue-600 hover:underline">
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => deleteMutation.mutate(product.id)}
+                    className="text-red-600 hover:underline"
+                  >
+                    Eliminar
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {showCreate && (
+        <CreateProductModal
+          onClose={() => setShowCreate(false)}
+          onSubmit={(data) => {
+            createMutation.mutate(data);
+            setShowCreate(false);
+          }}
+        />
+      )}
+    </div>
+  );
 }
