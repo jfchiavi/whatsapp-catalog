@@ -11,6 +11,12 @@ interface AuthState {
     logout: () => void;
 }
 
+/* Zustand store for authentication state 
+*** El store guarda:
+- user
+- token
+- isAuthenticated
+*/
 
 export const useAuthStore = create<AuthState>()(
     persist(
@@ -19,8 +25,11 @@ export const useAuthStore = create<AuthState>()(
             token: null,
             isAuthenticated: false,
             login: (user, token) => set({ user, token, isAuthenticated: true }),
-            logout: () => set({ user: null, token: null, isAuthenticated: false }),
+            logout: () => { set({ user: null, token: null, isAuthenticated: false });
+              localStorage.removeItem('refreshToken');
+            },
         }),
         { name: 'auth-storage' }
     )
 );
+

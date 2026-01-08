@@ -226,7 +226,27 @@ Endpoints optimizados para dashboards y gráficos.
 - convertir tu seed SQL a seed.ts
 - agregar rate limit al login
 
+### login seguro con JWT accessToken y refreshToken
+- Login (OK)
+- proteger rutas (RequireAuth) proteger rutas por rol, route guards
+- sidebar por permisos (RBAC)
+- refresh token automático (OK)
+- logout global
+- mejorar UX del login (loading, errors)
+
+
 ## para ver los enums en SQL
 ```sql
 SELECT unnest(enum_range(NULL::"Role")) AS roles;
 ```
+
+## 🔐 IMPORTANTE (camino a producción)
+
+Backend
+- Refresh token → cookie httpOnly
+- /auth/refresh lee la cookie
+
+Frontend
+- ❌ No usar localStorage para refresh
+- Axios → withCredentials: true
+

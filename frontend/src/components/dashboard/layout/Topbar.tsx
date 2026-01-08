@@ -1,5 +1,5 @@
 import { LogOut, User } from 'lucide-react';
-import { useAuth } from '../../../hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 
 
 export const Topbar = () => {

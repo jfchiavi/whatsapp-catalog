@@ -15,7 +15,7 @@ http.post('/api/auth/login', async ({ request }) => {
 
 
     if (!user) {
-        return HttpResponse.json({ message: 'Credenciales inválidas' }, { status: 401 });
+        return HttpResponse.json({ message: 'Credenciales inválidas crack' }, { status: 401 });
     }
 
     return HttpResponse.json({
