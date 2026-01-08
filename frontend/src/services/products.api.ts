@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { api } from './api';
 
 export interface Product {
   id: string;
@@ -10,12 +10,12 @@ export interface Product {
 }
 
 export const getProducts = async (): Promise<Product[]> => {
-  const { data } = await axios.get('/api/products');
+  const { data } = await api.get('/products');
   return data;
 };
 
 export const createProduct = async (payload: Omit<Product, 'id'>) => {
-  const { data } = await axios.post('/api/products', payload);
+  const { data } = await api.post('/products', payload);
   return data;
 };
 
@@ -23,10 +23,10 @@ export const updateProduct = async (
   id: string,
   payload: Partial<Product>
 ) => {
-  const { data } = await axios.put(`/api/products/${id}`, payload);
+  const { data } = await api.put(`/products/${id}`, payload);
   return data;
 };
 
 export const deleteProduct = async (id: string) => {
-  await axios.delete(`/api/products/${id}`);
+  await api.delete(`/products/${id}`);
 };

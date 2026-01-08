@@ -2,46 +2,54 @@ import {
   LayoutDashboard,
   Package,
   ShoppingCart,
-  BarChart3,
+  BarChart,
   CirclePile,
+  Users,
 } from 'lucide-react';
+import type { Permission } from '@/types/permissions';
 
-export type SidebarItem = {
+export interface SidebarItem {
   label: string;
-  icon: any;
-  to: string;
-  permission: string;
-};
+  path: string;
+  icon: React.ElementType;
+  permission: Permission;
+}
 
-export const sidebarItems: SidebarItem[] = [
+export const SIDEBAR_ITEMS: SidebarItem[] = [
   {
     label: 'Dashboard',
+    path: '/dashboard',
     icon: LayoutDashboard,
-    to: '/dashboard',
     permission: 'dashboard',
   },
   {
     label: 'Productos',
+    path: '/products',
     icon: Package,
-    to: '/products',
     permission: 'products',
   },
   {
     label: 'Stock',
+    path: '/stock',
     icon: CirclePile,
-    to: '/stock',
     permission: 'stock',
   },
   {
     label: 'Ventas',
+    path: '/sales',
     icon: ShoppingCart,
-    to: '/sales',
     permission: 'sales',
   },
   {
     label: 'Reportes',
-    icon: BarChart3,
-    to: '/reports',
+    path: '/reports',
+    icon: BarChart,
     permission: 'reports',
+  },
+  {
+    label: 'Usuarios',
+    path: '/users',
+    icon: Users,
+    permission: 'users',
   },
 ];

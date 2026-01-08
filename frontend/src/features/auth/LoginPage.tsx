@@ -17,10 +17,9 @@ export default function LoginPage() {
   const onSubmit = async (data: FormData) => {
     try {
       const response = await loginMutation.mutateAsync(data);
-      login(response.user, response.accessToken);
+      login(response.userResponse, response.accessToken);
       //⚠️ En producción real esto va en cookie httpOnly.
       localStorage.setItem('refreshToken', response.refreshToken);
-
       navigate('/dashboard');
     } catch (error) {
       alert('Credenciales inválidas');

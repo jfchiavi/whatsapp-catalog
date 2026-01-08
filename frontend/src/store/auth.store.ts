@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { AuthUser } from '../types/auth';
+import type { AuthUser } from '@/types/auth';
 
 
 interface AuthState {
@@ -32,4 +32,3 @@ export const useAuthStore = create<AuthState>()(
         { name: 'auth-storage' }
     )
 );
-

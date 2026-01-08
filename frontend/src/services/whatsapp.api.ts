@@ -1,5 +1,5 @@
-import axios from 'axios';
-import type { WhatsAppOrder } from '../types/whatsapp';
+import { api } from './api';
+import type { WhatsAppOrder } from '@/types/whatsapp';
 
 
 export const fetchWhatsAppOrders = async (): Promise<WhatsAppOrder[]> => {
@@ -18,7 +18,7 @@ export const fetchWhatsAppOrders = async (): Promise<WhatsAppOrder[]> => {
         ];
     }
 
-    const { data } = await axios.get('/api/whatsapp/orders');
+    const { data } = await api.get('/whatsapp/orders');
     return data;
 };
 
@@ -28,5 +28,5 @@ export const updateWhatsAppOrderStatus = async (id: string, status: string) => {
         return { success: true };
     }
 
-    return axios.put(`/api/whatsapp/orders/${id}`, { status });
+    return api.put(`/whatsapp/orders/${id}`, { status });
 };

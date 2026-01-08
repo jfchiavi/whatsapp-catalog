@@ -1,8 +1,8 @@
 import { NavLink } from 'react-router-dom';
 import { Menu } from 'lucide-react';
-import { sidebarItems } from './sidebarItems';
-import { useSidebar } from '../../../store/useSidebar';
-import { RoleBasedRender } from '../auth/RoleBasedRender';
+import { SIDEBAR_ITEMS } from '@/config/sidebar.config';
+import { RoleBasedRender } from '@/components/dashboard/auth/RoleBasedRender';
+import { useSidebar } from '@/store/useSidebar';
 
 export const Sidebar = () => {
   const { collapsed, toggle } = useSidebar();
@@ -18,7 +18,7 @@ export const Sidebar = () => {
     >
       {/* Header */}
       <div className="h-14 flex items-center justify-between px-4 border-b border-white/10">
-        {!collapsed && <span className="font-bold">Dashboard</span>}
+        {!collapsed && <span className="font-bold">Admin</span>}
         <button onClick={toggle}>
           <Menu size={18} />
         </button>
@@ -26,16 +26,16 @@ export const Sidebar = () => {
 
       {/* Links */}
       <nav className="flex-1 p-2 space-y-1">
-        {sidebarItems.map(item => {
+        {SIDEBAR_ITEMS.map((item) => {
           const Icon = item.icon;
 
           return (
             <RoleBasedRender
-              key={item.to}
+              key={item.path}
               permission={item.permission}
             >
               <NavLink
-                to={item.to}
+                to={item.path}
                 className={({ isActive }) =>
                   `
                   group relative flex items-center gap-3 px-3 py-2 rounded-md
@@ -49,13 +49,10 @@ export const Sidebar = () => {
                 }
               >
                 <Icon size={20} />
-
                 {!collapsed && (
                   <span className="text-sm">
                     {item.label}
-                  </span>
-                )}
-
+                  </span>)}
                 {/* Tooltip cuando está colapsado */}
                 {collapsed && (
                   <span
@@ -76,4 +73,4 @@ export const Sidebar = () => {
       </nav>
     </aside>
   );
-};
+}

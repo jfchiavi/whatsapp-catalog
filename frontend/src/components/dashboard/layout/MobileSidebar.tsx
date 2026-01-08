@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
-import { sidebarItems } from './sidebarItems';
-import { RoleBasedRender } from '../auth/RoleBasedRender';
+import { SIDEBAR_ITEMS } from '@/config/sidebar.config';
+import { RoleBasedRender } from '@/components/dashboard/auth/RoleBasedRender';
 
 export const MobileSidebar = () => {
   return (
@@ -10,16 +10,16 @@ export const MobileSidebar = () => {
       flex md:hidden
       justify-around items-center
     ">
-      {sidebarItems.map(item => {
+      {SIDEBAR_ITEMS.map(item => {
         const Icon = item.icon;
 
         return (
           <RoleBasedRender
-            key={item.to}
+            key={item.path}
             permission={item.permission}
           >
             <NavLink
-              to={item.to}
+              to={item.path}
               className="text-white/70 hover:text-white"
             >
               <Icon size={22} />

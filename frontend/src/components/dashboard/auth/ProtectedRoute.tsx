@@ -1,5 +1,5 @@
 import { Navigate, Outlet } from 'react-router-dom';
-import { useAuthStore } from '../../../store/auth.store';
+import { useAuthStore } from '@/store/auth.store';
 
 //TODO:// Extensible si querés proteger rutas por permisos específicos
 

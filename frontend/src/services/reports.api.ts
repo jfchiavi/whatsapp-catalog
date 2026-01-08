@@ -1,12 +1,12 @@
-import axios from 'axios';
-import { mockData } from '../mocks/data';
+import {api} from './api';
+import { mockData } from '@/mocks/data';
 
 import type {
   SalesReportItem,
   ProductReportItem,
   InventoryReportItem,
   BranchComparisonItem,
-} from '../types/reports';
+} from '@/types/reports';
 
 /**
  * Reporte de ventas por período
@@ -23,7 +23,7 @@ export const fetchSalesReport = async (
     ];
   }
 
-  const { data } = await axios.get('/api/reports/sales', {
+  const { data } = await api.get('/reports/sales', {
     params: { from, to },
   });
 
@@ -43,7 +43,7 @@ export const fetchProductsReport = async (): Promise<ProductReportItem[]> => {
     }));
   }
 
-  const { data } = await axios.get('/api/reports/products');
+  const { data } = await api.get('/reports/products');
   return data;
 };
 
@@ -67,7 +67,7 @@ export const fetchInventoryReport = async (): Promise<InventoryReportItem[]> => 
     });
   }
 
-  const { data } = await axios.get('/api/reports/inventory');
+  const { data } = await api.get('/reports/inventory');
   return data;
 };
 
@@ -85,6 +85,6 @@ export const fetchBranchComparison =
       }));
     }
 
-    const { data } = await axios.get('/api/reports/branches');
+    const { data } = await api.get('/reports/branches');
     return data;
   };

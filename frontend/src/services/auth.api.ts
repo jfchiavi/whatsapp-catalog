@@ -3,7 +3,7 @@ import { api } from './api';
 export interface LoginResponse {
   accessToken: string;
   refreshToken: string;
-  user: {
+  userResponse: {
     id: string;
     name: string;
     email: string;
@@ -18,6 +18,5 @@ export const loginRequest = async (payload: {
   password: string;
 }): Promise<LoginResponse> => {
   const { data } = await api.post('/auth/login', payload);
-  console.log('Datos recibidos del loginRequest:', data);
   return data;
 };
