@@ -3,18 +3,41 @@ import { CreateProductModal } from './CreateProductModal';
 import {
   useProducts,
   useCreateProduct,
+  useUpdateProduct,
   useDeleteProduct,
 } from '@/hooks/useProducts';
+import type { Product } from '@/types/product';
+import { UpdateProductModal } from './UpdateProdcutModal';
 
 export default function ProductsPage() {
   const { data, isLoading, error } = useProducts();
   const createMutation = useCreateProduct();
   const deleteMutation = useDeleteProduct();
+  const updateMutation = useUpdateProduct();
 
   const [showCreate, setShowCreate] = useState(false);
+  const [productToEdit, setProductToEdit] = useState<Product | null>(null);
 
   if (isLoading) return <p>Cargando productos...</p>;
   if (error) return <p>Error al cargar productos</p>;
+
+  const handleCreate = (data: any) => {
+    createMutation.mutate(data);
+    setShowCreate(false);
+  };
+
+  const handleUpdate = (data: any) => {
+    if (!productToEdit) return;
+    updateMutation.mutate({
+      id: productToEdit.id,
+      data,
+    });
+    setProductToEdit(null);
+  };
+
+  const handleDelete = (id: string) => {
+    deleteMutation.mutate(id);
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -59,11 +82,14 @@ export default function ProductsPage() {
                   </span>
                 </td>
                 <td className="p-3 text-right space-x-2">
-                  <button className="text-blue-600 hover:underline">
+                  <button
+                    onClick={() => setProductToEdit(product)}
+                    className="text-blue-600 hover:underline"
+                  >
                     Editar
                   </button>
                   <button
-                    onClick={() => deleteMutation.mutate(product.id)}
+                    onClick={() => handleDelete(product.id)}
                     className="text-red-600 hover:underline"
                   >
                     Eliminar
@@ -78,10 +104,15 @@ export default function ProductsPage() {
       {showCreate && (
         <CreateProductModal
           onClose={() => setShowCreate(false)}
-          onSubmit={(data) => {
-            createMutation.mutate(data);
-            setShowCreate(false);
-          }}
+          onSubmit={handleCreate}
+        />
+      )}
+
+      {productToEdit && (
+        <UpdateProductModal
+          product={productToEdit}
+          onClose={() => setProductToEdit(null)}
+          onSubmit={handleUpdate}
         />
       )}
     </div>

@@ -225,6 +225,12 @@ Endpoints optimizados para dashboards y gráficos.
 - la tabla Branch debe tener los campos direccion y horarios de atencion
 - convertir tu seed SQL a seed.ts
 - agregar rate limit al login
+- agregar búsqueda + filtros
+- paginación real
+- edición inline
+- permisos por rol (editar / eliminar)
+- tablas con shadcn/ui
+- manejo de errores + toasts
 
 ### login seguro con JWT accessToken y refreshToken
 - Login (OK)

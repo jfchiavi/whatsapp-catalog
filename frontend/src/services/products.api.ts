@@ -1,13 +1,5 @@
 import { api } from './api';
-
-export interface Product {
-  id: string;
-  sku: string;
-  name: string;
-  price: number;
-  cost: number;
-  active: boolean;
-}
+import type { Product } from '@/types/product';
 
 export const getProducts = async (): Promise<Product[]> => {
   const { data } = await api.get('/products');
@@ -22,7 +14,7 @@ export const createProduct = async (payload: Omit<Product, 'id'>) => {
 export const updateProduct = async (
   id: string,
   payload: Partial<Product>
-) => {
+): Promise<Product> => {
   const { data } = await api.put(`/products/${id}`, payload);
   return data;
 };

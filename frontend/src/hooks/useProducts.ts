@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { Product } from '@/types/product';
 import {
   getProducts,
   createProduct,
   updateProduct,
   deleteProduct,
-  type Product,
 } from '@/services/products.api';
 
 export const useProducts = () => {
@@ -15,32 +15,32 @@ export const useProducts = () => {
 };
 
 export const useCreateProduct = () => {
-  const qc = useQueryClient();
+  const queryClient  = useQueryClient();
   return useMutation({
     mutationFn: createProduct,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['products'] });
+      queryClient .invalidateQueries({ queryKey: ['products'] });
     },
   });
 };
 
 export const useUpdateProduct = () => {
-  const qc = useQueryClient();
+  const queryClient  = useQueryClient();
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Product> }) =>
       updateProduct(id, data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['products'] });
+      queryClient .invalidateQueries({ queryKey: ['products'] });
     },
   });
 };
 
 export const useDeleteProduct = () => {
-  const qc = useQueryClient();
+  const queryClient  = useQueryClient();
   return useMutation({
     mutationFn: deleteProduct,
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['products'] });
+      queryClient .invalidateQueries({ queryKey: ['products'] });
     },
   });
 };
