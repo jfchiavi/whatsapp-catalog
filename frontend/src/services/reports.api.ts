@@ -12,14 +12,14 @@ import type {
  * Reporte de ventas por período
  */
 export const fetchSalesReport = async (
-  from: string,
-  to: string
+  from: Date,
+  to: Date
 ): Promise<SalesReportItem[]> => {
   if (import.meta.env.VITE_USE_MOCKS === 'true') {
     // mock simple
     return [
-      { date: from, totalSales: 3, totalRevenue: 300 },
-      { date: to, totalSales: 5, totalRevenue: 650 },
+      { date: '2026-01-01' , totalSales: 3, totalRevenue: 300 },
+      { date: '2026-01-31', totalSales: 5, totalRevenue: 650 },
     ];
   }
 

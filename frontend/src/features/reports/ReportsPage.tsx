@@ -5,14 +5,18 @@ import {
   useProductsReport,
   useInventoryReport,
   useBranchComparison,
-} from '../../hooks/useReports';
+} from '@/hooks/useReports';
+
+const nowDate = new Date();
+const toDate = new Date();
+const fromDate = new Date(nowDate.setDate(nowDate.getDate() - 30));
 
 export default function ReportsPage() {
   const {
     data: sales,
     isLoading: salesLoading,
     error: salesError,
-  } = useSalesReport('2024-01-01', '2024-01-31');
+  } = useSalesReport(fromDate, toDate);
 
   const {
     data: products,

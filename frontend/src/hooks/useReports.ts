@@ -4,19 +4,19 @@ import {
   fetchProductsReport,
   fetchInventoryReport,
   fetchBranchComparison,
-} from '../services/reports.api';
+} from '@/services/reports.api';
 
 import type {
   SalesReportItem,
   ProductReportItem,
   InventoryReportItem,
   BranchComparisonItem,
-} from '../types/reports';
+} from '@/types/reports';
 
 /**
  * Ventas por período
  */
-export const useSalesReport = (from: string, to: string) =>
+export const useSalesReport = (from: Date, to: Date) =>
   useQuery<SalesReportItem[]>({
     queryKey: ['reports', 'sales', from, to],
     queryFn: () => fetchSalesReport(from, to),
