@@ -1,17 +1,29 @@
 // src/features/reports/ReportsPage.tsx
-
+import { useState } from 'react';
 import {
   useSalesReport,
   useProductsReport,
   useInventoryReport,
   useBranchComparison,
 } from '@/hooks/useReports';
+import { formatDateInput, parseDateInput } from '@/utils/date';
 
-const nowDate = new Date();
-const toDate = new Date();
-const fromDate = new Date(nowDate.setDate(nowDate.getDate() - 30));
+const now = new Date();
+const defaultFrom = new Date();
+defaultFrom.setDate(now.getDate() - 30);
 
 export default function ReportsPage() {
+    // 🔹 Estado usado por los hooks
+  const [fromDate, setFromDate] = useState<Date>(defaultFrom);
+  const [toDate, setToDate] = useState<Date>(now);
+  // 🔹 Estado del formulario
+  const [fromInput, setFromInput] = useState(
+    formatDateInput(defaultFrom)
+  );
+  const [toInput, setToInput] = useState(
+    formatDateInput(now)
+  );
+
   const {
     data: sales,
     isLoading: salesLoading,
@@ -33,6 +45,11 @@ export default function ReportsPage() {
     isLoading: branchesLoading,
   } = useBranchComparison();
 
+    const handleSearch = () => {
+    setFromDate(parseDateInput(fromInput));
+    setToDate(parseDateInput(toInput));
+  };
+  
   if (
     salesLoading ||
     productsLoading ||
@@ -49,6 +66,36 @@ export default function ReportsPage() {
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-bold">Reportes</h1>
+
+      {/* 🔍 Filtro de fechas */}
+      <section className="bg-white rounded-xl shadow-sm p-4 flex gap-4 items-end">
+        <div>
+          <label className="block text-sm font-medium">Desde</label>
+          <input
+            type="date"
+            value={fromInput}
+            onChange={(e) => setFromInput(e.target.value)}
+            className="border rounded p-2"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium">Hasta</label>
+          <input
+            type="date"
+            value={toInput}
+            onChange={(e) => setToInput(e.target.value)}
+            className="border rounded p-2"
+          />
+        </div>
+
+        <button
+          onClick={handleSearch}
+          className="bg-black text-white px-4 py-2 rounded"
+        >
+          Buscar
+        </button>
+      </section>
 
       {/* Ventas */}
       <section className="bg-white rounded-xl shadow-sm p-4">
