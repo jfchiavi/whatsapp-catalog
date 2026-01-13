@@ -49,7 +49,7 @@ export default function ReportsPage() {
     setFromDate(parseDateInput(fromInput));
     setToDate(parseDateInput(toInput));
   };
-  
+
   if (
     salesLoading ||
     productsLoading ||
@@ -114,7 +114,7 @@ export default function ReportsPage() {
               <tr key={row.date} className="border-t">
                 <td className="p-2">{row.date}</td>
                 <td className="p-2 text-center">{row.totalSales}</td>
-                <td className="p-2 text-center">${row.totalRevenue}</td>
+                <td className="p-2 text-center">${row.totalAmount}</td>
               </tr>
             ))}
           </tbody>
@@ -138,7 +138,7 @@ export default function ReportsPage() {
               <tr key={p.productId} className="border-t">
                 <td className="p-2">{p.name}</td>
                 <td className="p-2 text-center">{p.quantitySold}</td>
-                <td className="p-2 text-center">${p.revenue}</td>
+                <td className="p-2 text-center">${p.totalRevenue}</td>
               </tr>
             ))}
           </tbody>
@@ -162,7 +162,7 @@ export default function ReportsPage() {
               <tr key={i.productId} className="border-t">
                 <td className="p-2">{i.name}</td>
                 <td className="p-2 text-center">{i.totalStock}</td>
-                <td className="p-2 text-center">${i.valuation}</td>
+                <td className="p-2 text-center">${i.inventoryValue}</td>
               </tr>
             ))}
           </tbody>
@@ -186,7 +186,7 @@ export default function ReportsPage() {
               <tr key={b.branchId} className="border-t">
                 <td className="p-2">{b.branchName}</td>
                 <td className="p-2 text-center">{b.totalSales}</td>
-                <td className="p-2 text-center">${b.revenue}</td>
+                <td className="p-2 text-center">${b.totalAmount}</td>
               </tr>
             ))}
           </tbody>

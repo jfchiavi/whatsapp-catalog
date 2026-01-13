@@ -18,8 +18,8 @@ export const fetchSalesReport = async (
   if (import.meta.env.VITE_USE_MOCKS === 'true') {
     // mock simple
     return [
-      { date: '2026-01-01' , totalSales: 3, totalRevenue: 300 },
-      { date: '2026-01-31', totalSales: 5, totalRevenue: 650 },
+      { date: '2026-01-01' , totalSales: 3, totalAmount: 300 },
+      { date: '2026-01-31', totalSales: 5, totalAmount: 650 },
     ];
   }
 
@@ -39,11 +39,12 @@ export const fetchProductsReport = async (): Promise<ProductReportItem[]> => {
       productId: p.id,
       name: p.name,
       quantitySold: 10,
-      revenue: 10 * p.price,
+      totalRevenue: 10 * p.price,
     }));
   }
 
   const { data } = await api.get('/reports/products');
+  console.log('Product Report Data:', data);
   return data;
 };
 
@@ -62,7 +63,7 @@ export const fetchInventoryReport = async (): Promise<InventoryReportItem[]> => 
         productId: p.id,
         name: p.name,
         totalStock,
-        valuation: totalStock * p.cost,
+        inventoryValue: totalStock * p.cost,
       };
     });
   }
@@ -81,7 +82,7 @@ export const fetchBranchComparison =
         branchId: b.id,
         branchName: b.name,
         totalSales: 12,
-        revenue: 1200,
+        totalAmount: 1200,
       }));
     }
 
