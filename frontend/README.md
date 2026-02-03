@@ -525,3 +525,13 @@ optimistic UX
 
 backend real
 ```
+
+# ✅ Módulo de Reportes
+
+✔ 📈 Ventas → LineChart
+✔ 📊 Productos → BarChart
+✔ 🏬 Sucursales → BarChart
+✔ 📦 Stock → BarChart horizontal
+✔ 📋 Tablas de respaldo
+✔ UX clara
+✔ Arquitectura limpia

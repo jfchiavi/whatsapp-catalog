@@ -7,6 +7,14 @@ import {
   useBranchComparison,
 } from '@/hooks/useReports';
 import { formatDateInput, parseDateInput } from '@/utils/date';
+import { SalesLineChart } from './components/SalesLineChart';
+import { TopProductsBarChart } from './components/TopProductsBarChart';
+import { BranchComparisonBarChart } from './components/BranchComparisonBarChart';
+import { StockValueBarChart } from './components/StockValueBarChart';
+
+
+
+
 
 const now = new Date();
 const defaultFrom = new Date();
@@ -63,6 +71,16 @@ export default function ReportsPage() {
     return <div>Error al cargar reportes</div>;
   }
 
+  function sortedBranches(branches: any[]): { branchId: string; branchName: string; totalSales: number; totalAmount: number; }[] {
+    return [...branches].sort((a, b) => b.totalAmount - a.totalAmount);
+  }
+
+  function topFiveStockInventory(inventory: any[]): { productId: string; name: string; totalStock: number; inventoryValue: number; }[] {
+  return [...inventory]
+  .sort((a, b) => b.inventoryValue - a.inventoryValue)
+  .slice(0, 5);
+  }
+
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-bold">Reportes</h1>
@@ -100,7 +118,10 @@ export default function ReportsPage() {
       {/* Ventas */}
       <section className="bg-white rounded-xl shadow-sm p-4">
         <h2 className="font-semibold mb-4">Ventas por período</h2>
-
+        {/* 📈 Gráfico */}
+        {sales && sales.length > 0 && (
+          <SalesLineChart data={sales} />
+        )}
         <table className="w-full border">
           <thead className="bg-gray-100">
             <tr>
@@ -124,7 +145,10 @@ export default function ReportsPage() {
       {/* Productos */}
       <section className="bg-white rounded-xl shadow-sm p-4">
         <h2 className="font-semibold mb-4">Productos más vendidos</h2>
-
+        {/* 📊 Gráfico */}
+        {products && products.length > 0 && (
+          <TopProductsBarChart data={products} />
+        )}
         <table className="w-full border">
           <thead className="bg-gray-100">
             <tr>
@@ -146,9 +170,17 @@ export default function ReportsPage() {
       </section>
 
       {/* Inventario */}
-      <section className="bg-white rounded-xl shadow-sm p-4">
-        <h2 className="font-semibold mb-4">Valorización de stock</h2>
+      <section className="bg-white rounded-xl shadow-sm p-4 space-y-6">
+        <h2 className="font-semibold mb-4">
+          Valorización de stock
+        </h2>
 
+        {/* 📦 Gráfico */}
+        {inventory && inventory.length > 0 && (
+          <StockValueBarChart data={topFiveStockInventory(inventory)} />
+        )}
+
+        {/* 📋 Tabla */}
         <table className="w-full border">
           <thead className="bg-gray-100">
             <tr>
@@ -170,8 +202,15 @@ export default function ReportsPage() {
       </section>
 
       {/* Sucursales */}
-      <section className="bg-white rounded-xl shadow-sm p-4">
-        <h2 className="font-semibold mb-4">Comparativa por sucursal</h2>
+      <section className="bg-white rounded-xl shadow-sm p-4 space-y-6">
+        <h2 className="font-semibold mb-4">
+          Comparativa por sucursal
+        </h2>
+
+        {/* 🏬 Gráfico */}
+        {branches && branches.length > 0 && (
+          <BranchComparisonBarChart data={sortedBranches(branches)} />
+        )}
 
         <table className="w-full border">
           <thead className="bg-gray-100">
