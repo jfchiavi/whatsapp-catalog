@@ -1,5 +1,7 @@
 // src/features/reports/ReportsPage.tsx
 import { useState } from 'react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import {
   useSalesReport,
   useProductsReport,
@@ -53,10 +55,49 @@ export default function ReportsPage() {
     isLoading: branchesLoading,
   } = useBranchComparison();
 
-    const handleSearch = () => {
+  const [exporting, setExporting] = useState(false);
+
+const handleSearch = () => {
     setFromDate(parseDateInput(fromInput));
     setToDate(parseDateInput(toInput));
   };
+
+const handleExportPDF = async () => {
+  setExporting(true);
+  const element = document.getElementById('report-content');
+
+  if (!element) return;
+
+  const canvas = await html2canvas(element, {
+    scale: 2,
+    useCORS: true,
+  });
+
+  const imgData = canvas.toDataURL('image/png');
+
+  const pdf = new jsPDF('p', 'mm', 'a4');
+
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight =
+    (canvas.height * pdfWidth) / canvas.width;
+
+  pdf.addImage(
+    imgData,
+    'PNG',
+    0,
+    0,
+    pdfWidth,
+    pdfHeight
+  );
+
+  pdf.save(
+    `reporte-${new Date()
+      .toISOString()
+      .slice(0, 10)}.pdf`
+  );
+  setExporting(false);
+};
+
 
   if (
     salesLoading ||
@@ -113,124 +154,133 @@ export default function ReportsPage() {
         >
           Buscar
         </button>
+          <button
+            onClick={handleExportPDF}
+            disabled={exporting}
+            className="px-4 py-2 bg-black text-white rounded"
+          >
+            {exporting ? 'Generando...' : 'Exportar PDF'}
+          </button>
       </section>
-
-      {/* Ventas */}
-      <section className="bg-white rounded-xl shadow-sm p-4">
-        <h2 className="font-semibold mb-4">Ventas por período</h2>
-        {/* 📈 Gráfico */}
-        {sales && sales.length > 0 && (
-          <SalesLineChart data={sales} />
-        )}
-        <table className="w-full border">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-2 text-left">Fecha</th>
-              <th className="p-2 text-center">Ventas</th>
-              <th className="p-2 text-center">Ingresos</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sales?.map(row => (
-              <tr key={row.date} className="border-t">
-                <td className="p-2">{row.date}</td>
-                <td className="p-2 text-center">{row.totalSales}</td>
-                <td className="p-2 text-center">${row.totalAmount}</td>
+      
+      <div id="report-content" className="space-y-8"> 
+        {/* Ventas */}
+        <section className="bg-white rounded-xl shadow-sm p-4">
+          <h2 className="font-semibold mb-4">Ventas por período</h2>
+          {/* 📈 Gráfico */}
+          {sales && sales.length > 0 && (
+            <SalesLineChart data={sales} />
+          )}
+          <table className="w-full border">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="p-2 text-left">Fecha</th>
+                <th className="p-2 text-center">Ventas</th>
+                <th className="p-2 text-center">Ingresos</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+            </thead>
+            <tbody>
+              {sales?.map(row => (
+                <tr key={row.date} className="border-t">
+                  <td className="p-2">{row.date}</td>
+                  <td className="p-2 text-center">{row.totalSales}</td>
+                  <td className="p-2 text-center">${row.totalAmount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
 
-      {/* Productos */}
-      <section className="bg-white rounded-xl shadow-sm p-4">
-        <h2 className="font-semibold mb-4">Productos más vendidos</h2>
-        {/* 📊 Gráfico */}
-        {products && products.length > 0 && (
-          <TopProductsBarChart data={products} />
-        )}
-        <table className="w-full border">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-2 text-left">Producto</th>
-              <th className="p-2 text-center">Cantidad</th>
-              <th className="p-2 text-center">Ingresos</th>
-            </tr>
-          </thead>
-          <tbody>
-            {products?.map(p => (
-              <tr key={p.productId} className="border-t">
-                <td className="p-2">{p.name}</td>
-                <td className="p-2 text-center">{p.quantitySold}</td>
-                <td className="p-2 text-center">${p.totalRevenue}</td>
+        {/* Productos */}
+        <section className="bg-white rounded-xl shadow-sm p-4">
+          <h2 className="font-semibold mb-4">Productos más vendidos</h2>
+          {/* 📊 Gráfico */}
+          {products && products.length > 0 && (
+            <TopProductsBarChart data={products} />
+          )}
+          <table className="w-full border">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="p-2 text-left">Producto</th>
+                <th className="p-2 text-center">Cantidad</th>
+                <th className="p-2 text-center">Ingresos</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+            </thead>
+            <tbody>
+              {products?.map(p => (
+                <tr key={p.productId} className="border-t">
+                  <td className="p-2">{p.name}</td>
+                  <td className="p-2 text-center">{p.quantitySold}</td>
+                  <td className="p-2 text-center">${p.totalRevenue}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
 
-      {/* Inventario */}
-      <section className="bg-white rounded-xl shadow-sm p-4 space-y-6">
-        <h2 className="font-semibold mb-4">
-          Valorización de stock
-        </h2>
+        {/* Inventario */}
+        <section className="bg-white rounded-xl shadow-sm p-4 space-y-6">
+          <h2 className="font-semibold mb-4">
+            Valorización de stock
+          </h2>
 
-        {/* 📦 Gráfico */}
-        {inventory && inventory.length > 0 && (
-          <StockValueBarChart data={topFiveStockInventory(inventory)} />
-        )}
+          {/* 📦 Gráfico */}
+          {inventory && inventory.length > 0 && (
+            <StockValueBarChart data={topFiveStockInventory(inventory)} />
+          )}
 
-        {/* 📋 Tabla */}
-        <table className="w-full border">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-2 text-left">Producto</th>
-              <th className="p-2 text-center">Stock</th>
-              <th className="p-2 text-center">Valor</th>
-            </tr>
-          </thead>
-          <tbody>
-            {inventory?.map(i => (
-              <tr key={i.productId} className="border-t">
-                <td className="p-2">{i.name}</td>
-                <td className="p-2 text-center">{i.totalStock}</td>
-                <td className="p-2 text-center">${i.inventoryValue}</td>
+          {/* 📋 Tabla */}
+          <table className="w-full border">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="p-2 text-left">Producto</th>
+                <th className="p-2 text-center">Stock</th>
+                <th className="p-2 text-center">Valor</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+            </thead>
+            <tbody>
+              {inventory?.map(i => (
+                <tr key={i.productId} className="border-t">
+                  <td className="p-2">{i.name}</td>
+                  <td className="p-2 text-center">{i.totalStock}</td>
+                  <td className="p-2 text-center">${i.inventoryValue}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
 
-      {/* Sucursales */}
-      <section className="bg-white rounded-xl shadow-sm p-4 space-y-6">
-        <h2 className="font-semibold mb-4">
-          Comparativa por sucursal
-        </h2>
+        {/* Sucursales */}
+        <section className="bg-white rounded-xl shadow-sm p-4 space-y-6">
+          <h2 className="font-semibold mb-4">
+            Comparativa por sucursal
+          </h2>
 
-        {/* 🏬 Gráfico */}
-        {branches && branches.length > 0 && (
-          <BranchComparisonBarChart data={sortedBranches(branches)} />
-        )}
+          {/* 🏬 Gráfico */}
+          {branches && branches.length > 0 && (
+            <BranchComparisonBarChart data={sortedBranches(branches)} />
+          )}
 
-        <table className="w-full border">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="p-2 text-left">Sucursal</th>
-              <th className="p-2 text-center">Ventas</th>
-              <th className="p-2 text-center">Ingresos</th>
-            </tr>
-          </thead>
-          <tbody>
-            {branches?.map(b => (
-              <tr key={b.branchId} className="border-t">
-                <td className="p-2">{b.branchName}</td>
-                <td className="p-2 text-center">{b.totalSales}</td>
-                <td className="p-2 text-center">${b.totalAmount}</td>
+          <table className="w-full border">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="p-2 text-left">Sucursal</th>
+                <th className="p-2 text-center">Ventas</th>
+                <th className="p-2 text-center">Ingresos</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+            </thead>
+            <tbody>
+              {branches?.map(b => (
+                <tr key={b.branchId} className="border-t">
+                  <td className="p-2">{b.branchName}</td>
+                  <td className="p-2 text-center">{b.totalSales}</td>
+                  <td className="p-2 text-center">${b.totalAmount}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      </div>
     </div>
   );
 }
