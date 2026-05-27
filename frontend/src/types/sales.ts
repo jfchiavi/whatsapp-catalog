@@ -13,7 +13,7 @@ export interface SaleItem {
 export interface Sale {
     id: string;
     date: string;
-    branchId: string;
+    branchId: string | null;
     sellerId: string;
     customer?: {
         name: string;

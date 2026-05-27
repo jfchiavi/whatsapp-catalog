@@ -1,5 +1,5 @@
-import { useSales } from '../../hooks/useSales';
-import { generateSalePDF } from '../../utils/pdfGenerator';
+import { useSales } from '@/hooks/useSales';
+import { generateSalePDF } from '@/utils/pdfGenerator';
 
 
 export default function SalesPage() {

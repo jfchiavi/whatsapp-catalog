@@ -1,5 +1,5 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createSale } from '../services/sales.api';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { createSale, fetchSales } from '@/services/sales.api';
 
 
 export const useSales = () => {
@@ -38,5 +38,11 @@ export const useSales = () => {
         },
     });
 
-    return { create };
+    const list = useQuery({
+        queryKey: ['sales'],
+        queryFn: fetchSales,
+    });
+
+
+    return { create, list };
 };

@@ -9,7 +9,7 @@ export const createSale = async (sale: Omit<Sale, 'id'>): Promise<Sale> => {
             id: `sale-${Date.now()}`,
         } as Sale;
     }
-
+    console.log('FRONT: Creating sale:', sale);
     const { data } = await api.post('/sales', sale);
     return data;
 };

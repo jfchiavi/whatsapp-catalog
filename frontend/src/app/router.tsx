@@ -8,7 +8,8 @@ import LoginPage  from '@/features/auth/LoginPage';
 import HomeDashBoard from '@/features/dashboard/Home';
 import ProductsPage from '@/features/products/ProductsPage';
 import StockPage from '@/features/stock/StockPage';
-import SalesPage from '@/features/sales/SalesPage';
+import SalesListPage from '@/features/sales/SalesListPage';
+import CreateSalePage from '@/features/sales/CreateSalePage';
 import ReportsPage from '@/features/reports/ReportsPage';
 import ErrorPage from '@/components/dashboard/layout/ErrorPage';
 
@@ -34,7 +35,9 @@ export const router = createBrowserRouter([
           { path: '/dashboard', lazy:async () => {return {Component: HomeDashBoard};} },
           { path: '/products', lazy: async () => {return {Component: ProductsPage}; }},
           { path: '/stock', lazy: async () => {return {Component: StockPage }}},
-          { path: '/sales', lazy: async () => {return {Component: SalesPage }} },
+          { path: '/sales', lazy: async () => {return {Component: SalesListPage }} },
+          { path: '/sales/new', lazy: async () => {return {Component: CreateSalePage }} },
+          //TODO: /sales/:id       → SaleDetailPage (opcional)
           { path: '/reports', lazy: async () => {return {Component: ReportsPage }}},
         ],
       },

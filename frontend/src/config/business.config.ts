@@ -1,5 +1,5 @@
 export const businessConfig = {
-  whatsappNumber: "5491112345678",
+  whatsappNumber: "59174103444",
   currency: "ARS",
   autoClearCart: true,
 };
