@@ -7,7 +7,7 @@
 //   - Restringe or��genes (no * en prod)
 //   - Aplica solo a /api/*
 */
-import './prisma-augmentation';
+// import './prisma-augmentation';
 import { NextRequest, NextResponse } from 'next/server';
 
 const ALLOWED_ORIGINS = [

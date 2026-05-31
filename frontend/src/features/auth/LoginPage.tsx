@@ -22,6 +22,7 @@ export default function LoginPage() {
       localStorage.setItem('refreshToken', response.refreshToken);
       navigate('/dashboard');
     } catch (error) {
+      console.error('Login failed:', error);
       alert('Credenciales inválidas');
     }
   };

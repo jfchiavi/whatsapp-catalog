@@ -1,17 +1,24 @@
+# Aplicar los nuevos cambios de tus Schemas
+
 Para aplicar los nuevos modelos y relaciones de Prisma tanto en tu código como en tu base de datos Docker, debes ejecutar dos comandos principales desde la terminal de tu proyecto.
 Aquí tienes los pasos exactos para sincronizar todo sin perder tus datos actuales:
+
 ## 1. Generar el cliente de Prisma (Código)
 Este comando actualiza los tipos de TypeScript y las funciones internas de Prisma en tu proyecto Next.js/Node.js para que reconozcan los nuevos modelos.
+
 ````bash
 npx prisma generate
 ````
 ## 2. Crear y aplicar la migración (Base de datos)
 Este comando compara tu archivo schema.prisma con la base de datos que está corriendo en Docker. Detectará los cambios, creará un archivo SQL con la migración y lo aplicará en tu base de datos de forma segura.
+
 ````bash
 npx prisma migrate dev --name descripcion_de_tus_cambios
 ````
+
 Reemplaza descripcion_de_tus_cambios por un texto corto (por ejemplo: create_users_and_posts).
 ------------------------------
+
 ## ⚠️ Caso alternativo: Reinicio total (Borrar todo y empezar de cero)
 Si estás en una etapa inicial de desarrollo, no te importan los datos actuales y quieres limpiar la base de datos por completo para que quede exactamente igual a tu esquema, usa este comando:
 ````bash
@@ -26,7 +33,7 @@ Necesitas también crear datos de prueba (seed) automáticos para tus nuevos mod
 
 ````bash
 #ejecutar el seed-refactor del raiz, en DBeaver
-seed-refactor.sql
+seed-inicial.sql
 ````
 
 # error P1012
