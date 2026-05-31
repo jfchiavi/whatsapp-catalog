@@ -1,0 +1,177 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  SUPER_ADMIN
+  BRANCH_MANAGER
+  SELLER
+}
+
+model Tenant {
+  id   String @id @default(uuid())
+  name String
+
+  users          User[]
+  branches       Branch[]
+  products       Product[]
+  variants       Variant[]
+  stocks         Stock[]
+  stockMovements StockMovement[]
+  sales          Sale[]
+  saleItems      SaleItem[]
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  password  String
+  role      Role
+  branchId  String?
+  branch    Branch?  @relation(fields: [branchId], references: [id])
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  refreshTokens  RefreshToken[]
+  sales          Sale[]
+  stockMovements StockMovement[]
+
+  @@unique([email, tenantId])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Branch {
+  id        String   @id @default(uuid())
+  name      String
+  type      String // physical | virtual
+  address   String?
+  hours     String?
+  createdAt DateTime @default(now())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+
+  users User[]
+  stock Stock[]
+  sales Sale[]
+}
+
+model Product {
+  id             String    @id @default(uuid())
+  name           String
+  imageUrl       String?
+  batch          String?
+  expirationDate DateTime?
+  active         Boolean   @default(true)
+  baseAttributes Json?     @default("{}")
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  tenantId       String
+  tenant         Tenant    @relation(fields: [tenantId], references: [id])
+
+  variants Variant[]
+}
+
+model Variant {
+  id         String   @id @default(uuid())
+  productId  String
+  tenantId   String
+  sku        String
+  price      Float
+  cost       Float
+  attributes Json     @default("{}")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  product    Product  @relation(fields: [productId], references: [id])
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+
+  stock     Stock[]
+  saleItems SaleItem[]
+
+  @@unique([tenantId, sku])
+}
+
+model Stock {
+  id        String  @id @default(uuid())
+  variantId String
+  branchId  String
+  quantity  Int
+  tenantId  String
+  tenant    Tenant  @relation(fields: [tenantId], references: [id])
+  variant   Variant @relation(fields: [variantId], references: [id])
+  branch    Branch  @relation(fields: [branchId], references: [id])
+
+  @@unique([tenantId, variantId, branchId])
+}
+
+model StockMovement {
+  id           String   @id @default(uuid())
+  variantId    String
+  fromBranchId String?
+  toBranchId   String?
+  quantity     Int
+  type         String // ADJUST | TRANSFER | SALE
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id])
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  createdAt    DateTime @default(now())
+}
+
+model Sale {
+  id        String   @id @default(uuid())
+  branchId  String
+  userId    String
+  total     Float
+  createdAt DateTime @default(now())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+
+  branch Branch     @relation(fields: [branchId], references: [id])
+  user   User       @relation(fields: [userId], references: [id])
+  items  SaleItem[]
+}
+
+model SaleItem {
+  id        String @id @default(uuid())
+  saleId    String
+  variantId String
+  quantity  Int
+  price     Float
+  tenantId  String
+  tenant    Tenant @relation(fields: [tenantId], references: [id])
+
+  sale    Sale    @relation(fields: [saleId], references: [id])
+  variant Variant @relation(fields: [variantId], references: [id])
+}
+
+model WhatsappOrder {
+  id            String   @id @default(uuid())
+  customerName  String
+  customerPhone String
+  message       String
+  status        String // pending | processing | completed
+  total         Float
+  createdAt     DateTime @default(now())
+}
