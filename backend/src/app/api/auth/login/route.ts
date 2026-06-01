@@ -26,7 +26,10 @@ export async function POST(req: Request) {
 
   const { email, password } = parsed.data;
 
-  const user = await prisma.user.findUnique({ where: { email } });
+  // `email` is not a standalone unique key in the Prisma model.
+  // Users are unique by the compound index `[email, tenantId]`, so use
+  // `findFirst` when the login payload contains only email + password.
+  const user = await prisma.user.findFirst({ where: { email } });
 
   if (!user) {
     return NextResponse.json(
@@ -57,6 +60,7 @@ export async function POST(req: Request) {
     data: {
       token: refreshToken,
       userId: user.id,
+      tenantId: user.tenantId,
       expiresAt: new Date(Date.now() + 7 * 86400000),
     },
   });

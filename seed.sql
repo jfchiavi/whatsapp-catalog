@@ -32,7 +32,7 @@ VALUES
   'user-admin',
   'Admin',
   'admin@demo.com',
-  '$2a$10$4m5yC2cYv7v8tFQH5ZfB1O6Qw9A8xE2Q8M0E6MZQ6B5hH8E9nZ2aG',
+  '$2b$10$4EugrtvDPexe0g4OSYo77exqwxrQU.mLgSWQSQVmo3j4j6SZvkpZC',
   'SUPER_ADMIN',
   null,
   NOW()
@@ -41,7 +41,7 @@ VALUES
   'user-manager',
   'Manager Central',
   'manager@demo.com',
-  '$2a$10$4m5yC2cYv7v8tFQH5ZfB1O6Qw9A8xE2Q8M0E6MZQ6B5hH8E9nZ2aG',
+  '$2b$10$4EugrtvDPexe0g4OSYo77exqwxrQU.mLgSWQSQVmo3j4j6SZvkpZC',
   'BRANCH_MANAGER',
   'branch-central',
   NOW()
@@ -50,7 +50,7 @@ VALUES
   'user-seller',
   'Vendedor',
   'seller@demo.com',
-  '$2a$10$4m5yC2cYv7v8tFQH5ZfB1O6Qw9A8xE2Q8M0E6MZQ6B5hH8E9nZ2aG',
+  '$2b$10$4EugrtvDPexe0g4OSYo77exqwxrQU.mLgSWQSQVmo3j4j6SZvkpZC',
   'SELLER',
   'branch-central',
   NOW() 

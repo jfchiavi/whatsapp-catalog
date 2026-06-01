@@ -1,9 +1,9 @@
-import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useLogin } from '@/hooks/useLogin';
-import { useAuth } from '@/context/AuthContext';
-import { schema, type FormData } from './login.schema';
+import { useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useLogin } from "@/hooks/useLogin";
+import { useAuth } from "@/context/AuthContext";
+import { schema, type FormData } from "./login.schema";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -17,13 +17,14 @@ export default function LoginPage() {
   const onSubmit = async (data: FormData) => {
     try {
       const response = await loginMutation.mutateAsync(data);
+      console.log("Login successful:", response);
       login(response.userResponse, response.accessToken);
       //⚠️ En producción real esto va en cookie httpOnly.
-      localStorage.setItem('refreshToken', response.refreshToken);
-      navigate('/dashboard');
+      localStorage.setItem("refreshToken", response.refreshToken);
+      navigate("/dashboard");
     } catch (error) {
-      console.error('Login failed:', error);
-      alert('Credenciales inválidas');
+      console.error("Login failed:", error);
+      alert("Credenciales inválidas");
     }
   };
 
@@ -33,13 +34,13 @@ export default function LoginPage() {
       className="max-w-sm mx-auto mt-40 space-y-4"
     >
       <input
-        {...form.register('email')}
+        {...form.register("email")}
         placeholder="Email"
         className="w-full border p-2"
       />
       <input
         type="password"
-        {...form.register('password')}
+        {...form.register("password")}
         placeholder="Password"
         className="w-full border p-2"
       />
@@ -49,7 +50,7 @@ export default function LoginPage() {
         disabled={loginMutation.isPending}
         className="w-full bg-black text-white py-2 disabled:opacity-50"
       >
-        {loginMutation.isPending ? 'Ingresando...' : 'Ingresar'}
+        {loginMutation.isPending ? "Ingresando..." : "Ingresar"}
       </button>
     </form>
   );

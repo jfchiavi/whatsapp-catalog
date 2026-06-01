@@ -46,8 +46,14 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Si no es 401 → error normal
-    if (error.response?.status !== 401 || originalRequest._retry) {
+    const isAuthEndpoint = [
+      '/auth/login',
+      '/auth/refresh',
+      '/auth/logout',
+    ].some((path) => originalRequest.url?.includes(path));
+
+    // Si no es 401 o es la propia ruta de auth → error normal
+    if (error.response?.status !== 401 || originalRequest._retry || isAuthEndpoint) {
       return Promise.reject(error);
     }
 

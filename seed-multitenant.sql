@@ -42,7 +42,7 @@ VALUES
   'user-demo-admin',
   'Admin Demo',
   'admin@demo.com',
-  '$2a$10$4m5yC2cYv7v8tFQH5ZfB1O6Qw9A8xE2Q8M0E6MZQ6B5hH8E9nZ2aG',
+  '$2b$10$4EugrtvDPexe0g4OSYo77exqwxrQU.mLgSWQSQVmo3j4j6SZvkpZC',
   'SUPER_ADMIN',
   NULL,
   'tenant-demo'
@@ -51,7 +51,7 @@ VALUES
   'user-demo-seller',
   'Vendedor Demo',
   'seller@demo.com',
-  '$2a$10$4m5yC2cYv7v8tFQH5ZfB1O6Qw9A8xE2Q8M0E6MZQ6B5hH8E9nZ2aG',
+  '$2b$10$4EugrtvDPexe0g4OSYo77exqwxrQU.mLgSWQSQVmo3j4j6SZvkpZC',
   'SELLER',
   'branch-demo-central',
   'tenant-demo'
@@ -60,7 +60,7 @@ VALUES
   'user-fashion-admin',
   'Admin Fashion',
   'admin@fashion.com',
-  '$2a$10$4m5yC2cYv7v8tFQH5ZfB1O6Qw9A8xE2Q8M0E6MZQ6B5hH8E9nZ2aG',
+  '$2b$10$4EugrtvDPexe0g4OSYo77exqwxrQU.mLgSWQSQVmo3j4j6SZvkpZC',
   'SUPER_ADMIN',
   NULL,
   'tenant-fashion'
