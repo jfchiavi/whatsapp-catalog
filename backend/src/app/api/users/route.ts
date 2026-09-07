@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
 
   permissionMiddleware(auth.role, 'dashboard');
 
-  const users = await getUsers(auth.role, auth.branchId);
+  const users = await getUsers(auth.tenantId, auth.role, auth.branchId);
   return NextResponse.json(users);
 }
 
@@ -34,6 +34,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(parsed.error, { status: 400 });
   }
 
-  const user = await createUser(parsed.data);
+  const user = await createUser({ ...parsed.data, tenantId: auth.tenantId });
   return NextResponse.json(user, { status: 201 });
 }

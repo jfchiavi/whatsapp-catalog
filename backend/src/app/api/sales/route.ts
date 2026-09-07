@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const branchId = auth.branchId || undefined;
-    const sales = await getSales(branchId);
+    const sales = await getSales(auth.tenantId, branchId);
     return NextResponse.json(sales);
   } catch (error: any) {
     return NextResponse.json(
@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
     const sale = await createSale(
       auth.userId,
       branchIdToUse,
+      auth.tenantId,
       parsed.data.items
     );
     return NextResponse.json(sale, { status: 201 });

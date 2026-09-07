@@ -16,7 +16,7 @@ export async function GET(
   permissionMiddleware(auth.role, 'products');
 
   try {
-    const product = await getProductById(params.id);
+    const product = await getProductById(params.id, auth.tenantId);
     return NextResponse.json(product);
   } catch (error) {
     return handleError(error);
@@ -41,7 +41,7 @@ export async function PUT(
         return handleError(nerror);
       }
 
-      const product = await updateProduct(parameter.id, parsed.data);
+      const product = await updateProduct(parameter.id, auth.tenantId, parsed.data);
       return NextResponse.json(product);
   } catch (error) {
     return handleError(error);
@@ -62,7 +62,7 @@ export async function DELETE(
   try {    
     const parameter = await params;
 
-    await deleteProduct(parameter.id);
+    await deleteProduct(parameter.id, auth.tenantId);
 
     return NextResponse.json(
       { message: 'Product deleted successfully' }, 

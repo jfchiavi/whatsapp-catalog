@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
   permissionMiddleware(auth.role, 'products');
   try {
-    const products = await getProducts();
+    const products = await getProducts(auth.tenantId);
     return NextResponse.json(products);
   } catch (error) {
     return handleError(error);
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(parsed.error, { status: 400 });
   }
   try {
-      const product = await createProduct(parsed.data);
+      const product = await createProduct({ ...parsed.data, tenantId: auth.tenantId });
     return NextResponse.json(product, { status: 201 });
   } catch (error) {
     return handleError(error);

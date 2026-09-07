@@ -19,7 +19,8 @@ export async function POST(
       params.id,
       auth.userId,
       auth.branchId!,
-      body.items
+      body.items,
+      auth.tenantId 
     );
     return NextResponse.json(sale);
   } catch (error: any) {

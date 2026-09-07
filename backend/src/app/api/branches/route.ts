@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
 
   permissionMiddleware(auth.role, 'dashboard');
 
-  const branches = await getBranches();
+  const branches = await getBranches(auth.tenantId);
   return NextResponse.json(branches);
 }
 
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const branch = await createBranch(parsed.data);
+    const branch = await createBranch({ ...parsed.data, tenantId: auth.tenantId });
     return NextResponse.json(branch, { status: 201 });    
   } catch (error) {
     return handleError(error);

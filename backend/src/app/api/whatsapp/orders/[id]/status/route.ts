@@ -20,6 +20,6 @@ export async function PUT(
     return NextResponse.json(parsed.error, { status: 400 });
   }
 
-  const order = await updateWhatsappStatus(params.id, parsed.data.status);
+  const order = await updateWhatsappStatus(params.id, auth.tenantId, parsed.data.status);
   return NextResponse.json(order);
 }

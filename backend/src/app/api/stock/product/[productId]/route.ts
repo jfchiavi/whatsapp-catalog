@@ -12,8 +12,7 @@ export async function GET(
 
   permissionMiddleware(auth.role, 'stock');
 
-    // asynchronous access of `params.productId`.
-  const { productId } = await params
+  const { productId } = params;
   const stock = await getStockByProduct(productId);
   return NextResponse.json(stock);
 }

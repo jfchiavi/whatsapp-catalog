@@ -1,15 +1,40 @@
 import { prisma } from '@/lib/prisma';
 
-export const getStockByVariant = async (variantId: string) => {
+export const getStockByVariant = async (variantId: string, tenantId: string) => {
   return prisma.stock.findMany({
-    where: { variantId },
+    where: {
+      variantId,
+      tenantId,
+    },
     include: { branch: true },
   });
 };
 
-export const getStockByBranch = async (branchId: string) => {
+export const getStockByProduct = async (productId: string, tenantId: string) => {
   return prisma.stock.findMany({
-    where: { branchId },
+    where: {
+      variant: {
+        productId,
+        tenantId,
+      },
+    },
+    include: {
+      branch: true,
+      variant: {
+        include: {
+          product: true,
+        },
+      },
+    },
+  });
+};
+
+export const getStockByBranch = async (branchId: string, tenantId: string) => {
+  return prisma.stock.findMany({
+    where: {
+      branchId,
+      tenantId,
+    },
     include: {
       variant: {
         include: {

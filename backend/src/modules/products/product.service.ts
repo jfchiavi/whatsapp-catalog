@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/prisma';
 
-export const getProducts = async () => {
+export const getProducts = async (tenantId: string) => {
   return prisma.product.findMany({
+    where: { tenantId },
     orderBy: { name: 'asc' },
     include: {
       variants: {
@@ -11,9 +12,9 @@ export const getProducts = async () => {
   });
 };
 
-export const getProductById = async (id: string) => {
-  return prisma.product.findUnique({
-    where: { id },
+export const getProductById = async (id: string, tenantId: string) => {
+  return prisma.product.findFirst({
+    where: { id, tenantId },
     include: {
       variants: true,
     },
@@ -27,6 +28,7 @@ export const createProduct = async (data: {
   expirationDate?: Date;
   baseAttributes?: Record<string, unknown>;
   active?: boolean;
+  tenantId: string;
 }) => {
   return prisma.product.create({
     data: {
@@ -36,12 +38,14 @@ export const createProduct = async (data: {
       expirationDate: data.expirationDate,
       baseAttributes: data.baseAttributes ?? {},
       active: data.active ?? true,
+      tenantId: data.tenantId,
     },
   });
 };
 
 export const updateProduct = async (
   id: string,
+  tenantId: string,
   data: Partial<{
     name: string;
     imageUrl?: string;
@@ -52,7 +56,7 @@ export const updateProduct = async (
   }>
 ) => {
   return prisma.product.update({
-    where: { id },
+    where: { id, tenantId },
     data: {
       name: data.name,
       imageUrl: data.imageUrl,
@@ -64,6 +68,6 @@ export const updateProduct = async (
   });
 };
 
-export const deleteProduct = async (id: string) => {
-  return prisma.product.delete({ where: { id } });
+export const deleteProduct = async (id: string, tenantId: string) => {
+  return prisma.product.delete({ where: { id, tenantId } });
 };

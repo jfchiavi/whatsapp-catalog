@@ -1,8 +1,9 @@
 import { prisma } from '@/lib/prisma';
 
-export async function getSales(branchId?: string) {
+export async function getSales(tenantId: string, branchId?: string) {
   return prisma.sale.findMany({
     where: {
+      tenantId,
       branchId,
     },
     orderBy: {
@@ -27,22 +28,9 @@ export async function getSales(branchId?: string) {
 export const createSale = async (
   userId: string,
   branchId: string,
+  tenantId: string,
   items: { variantId: string; quantity: number }[]
 ) => {
-  // Get user info to validate tenantId
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    include: {
-      tenant: true,
-    },
-  });
-
-  if (!user) {
-    throw new Error('User not found');
-  }
-
-  const tenantId = user.tenantId;
-
   return prisma.$transaction(async (tx) => {
     let total = 0;
 

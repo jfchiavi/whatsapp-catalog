@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 
   permissionMiddleware(auth.role, 'whatsapp_orders');
 
-  const orders = await getWhatsappOrders();
+  const orders = await getWhatsappOrders(auth.tenantId);
   return NextResponse.json(orders);
 }
 
@@ -25,6 +25,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(parsed.error, { status: 400 });
   }
 
-  const order = await createWhatsappOrder(parsed.data);
+  const order = await createWhatsappOrder({ ...parsed.data, tenantId: auth.tenantId });
   return NextResponse.json(order, { status: 201 });
 }
