@@ -35,9 +35,10 @@ export const getProductsReport = async (tenantId: string): Promise<ProductReport
       p.id as "productId",
       p.name,
       SUM(si.quantity)::int as "quantitySold",
-      SUM(si.quantity * p.price)::float as "totalRevenue"
+      SUM(si.quantity * v.price)::float as "totalRevenue"
     FROM "SaleItem" si
-    JOIN "Product" p ON p.id = si."productId"
+    JOIN "Variant" v ON v.id = si."variantId"
+    JOIN "Product" p ON p.id = v."productId"
     JOIN "Sale" s ON s.id = si."saleId"
     WHERE s."tenantId" = ${tenantId}
     GROUP BY p.id, p.name
@@ -54,9 +55,10 @@ export const getInventoryReport = async (tenantId: string): Promise<InventoryRep
       p.id as "productId",
       p.name,
       SUM(s.quantity)::int as "totalStock",
-      SUM(s.quantity * p.cost)::float as "inventoryValue"
+      SUM(s.quantity * v.cost)::float as "inventoryValue"
     FROM "Stock" s
-    JOIN "Product" p ON p.id = s."productId"
+    JOIN "Variant" v ON v.id = s."variantId"
+    JOIN "Product" p ON p.id = v."productId"
     WHERE s."tenantId" = ${tenantId}
     GROUP BY p.id, p.name
     ORDER BY p.name ASC

@@ -42,7 +42,13 @@ api.interceptors.request.use((config) => {
 
 //Response interceptor (refresh automático)
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const body = response.data;
+    if (body && typeof body === 'object' && body.success === true && 'data' in body) {
+      response.data = body.data;
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 
