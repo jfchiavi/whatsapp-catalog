@@ -5,7 +5,7 @@ import { getStockByProduct } from '@/modules/stock/stock.service';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ productId: string }> }
 ) {
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
@@ -13,7 +13,7 @@ export async function GET(
   const perm = permissionMiddleware(auth.role, 'stock');
   if (perm) return perm;
 
-  const { productId } = params;
-  const stock = await getStockByProduct(productId);
+  const { productId } = await params;
+  const stock = await getStockByProduct(productId, auth.tenantId);
   return NextResponse.json({ success: true, data: stock });
 }

@@ -44,7 +44,7 @@ export function StockValueBarChart({ data }: Props) {
           />
 
           <Tooltip
-            formatter={(value, name, props) => {
+            formatter={(value, name) => {
               if (name === 'inventoryValue') {
                 return [`$${value}`, 'Valor'];
               }

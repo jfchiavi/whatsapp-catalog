@@ -43,7 +43,7 @@ export const convertWhatsappToSale = async (
   userId: string,
   branchId: string,
   tenantId: string,
-  items: { productId: string; quantity: number }[]
+  items: { variantId: string; quantity: number }[]
 ) => {
   return prisma.$transaction(async (tx) => {
     const order = await tx.whatsappOrder.findFirst({

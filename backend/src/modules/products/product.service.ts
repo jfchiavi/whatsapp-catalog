@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 
 export const getProducts = async (tenantId: string) => {
   return prisma.product.findMany({
@@ -26,7 +27,7 @@ export const createProduct = async (data: {
   imageUrl?: string;
   batch?: string;
   expirationDate?: Date;
-  baseAttributes?: Record<string, unknown>;
+  baseAttributes?: Prisma.InputJsonValue;
   active?: boolean;
   tenantId: string;
 }) => {
@@ -36,7 +37,7 @@ export const createProduct = async (data: {
       imageUrl: data.imageUrl,
       batch: data.batch,
       expirationDate: data.expirationDate,
-      baseAttributes: data.baseAttributes ?? {},
+      baseAttributes: data.baseAttributes ?? ({} as Prisma.InputJsonValue),
       active: data.active ?? true,
       tenantId: data.tenantId,
     },
@@ -51,7 +52,7 @@ export const updateProduct = async (
     imageUrl?: string;
     batch?: string;
     expirationDate?: Date;
-    baseAttributes?: Record<string, unknown>;
+    baseAttributes?: Prisma.InputJsonValue;
     active?: boolean;
   }>
 ) => {

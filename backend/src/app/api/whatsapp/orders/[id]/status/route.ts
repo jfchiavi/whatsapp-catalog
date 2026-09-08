@@ -6,7 +6,7 @@ import { updateWhatsappStatus } from '@/modules/whatsapp/whatsapp.service';
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
@@ -21,6 +21,7 @@ export async function PUT(
     return NextResponse.json(parsed.error, { status: 400 });
   }
 
-  const order = await updateWhatsappStatus(params.id, auth.tenantId, parsed.data.status);
+  const { id } = await params;
+  const order = await updateWhatsappStatus(id, auth.tenantId, parsed.data.status);
   return NextResponse.json({ success: true, data: order });
 }

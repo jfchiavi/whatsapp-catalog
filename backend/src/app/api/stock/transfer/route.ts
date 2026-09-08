@@ -20,10 +20,11 @@ export async function POST(req: NextRequest) {
 
   try {
     await transferStock(
-      parsed.data.productId,
+      parsed.data.variantId,
       parsed.data.fromBranchId,
       parsed.data.toBranchId,
-      parsed.data.quantity
+      parsed.data.quantity,
+      auth.userId
     );
     return NextResponse.json({ success: true, data: { transferred: true } });
   } catch (error: any) {

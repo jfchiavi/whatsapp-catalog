@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Clock, Search } from "lucide-react";
+import { Clock } from "lucide-react";
 
 interface Props {
   query: string;

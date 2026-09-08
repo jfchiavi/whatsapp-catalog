@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
@@ -20,7 +20,13 @@ export async function GET(
         where: { id: id },
         include: {
           items: {
-            include: { product: true },
+            include: {
+              variant: {
+                include: {
+                  product: true,
+                },
+              },
+            },
           },
           branch: true,
           user: true,

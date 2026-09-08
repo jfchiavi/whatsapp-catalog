@@ -96,9 +96,9 @@ export const adjustStock = async (
   }
 
   return prisma.$transaction(async (tx) => {
-    const stock = await tx.stock.upsert({
+      const stock = await tx.stock.upsert({
       where: {
-        variantId_branchId_tenantId: { variantId, branchId, tenantId },
+        tenantId_variantId_branchId: { tenantId, variantId, branchId },
       },
       update: {
         quantity: { increment: quantity },
@@ -181,7 +181,7 @@ export const transferStock = async (
   return prisma.$transaction(async (tx) => {
     const fromStock = await tx.stock.findUnique({
       where: {
-        variantId_branchId_tenantId: { variantId, branchId: fromBranchId, tenantId },
+        tenantId_variantId_branchId: { tenantId, variantId, branchId: fromBranchId },
       },
     });
 
@@ -191,14 +191,14 @@ export const transferStock = async (
 
     await tx.stock.update({
       where: {
-        variantId_branchId_tenantId: { variantId, branchId: fromBranchId, tenantId },
+        tenantId_variantId_branchId: { tenantId, variantId, branchId: fromBranchId },
       },
       data: { quantity: { decrement: quantity } },
     });
 
     await tx.stock.upsert({
       where: {
-        variantId_branchId_tenantId: { variantId, branchId: toBranchId, tenantId },
+        tenantId_variantId_branchId: { tenantId, variantId, branchId: toBranchId },
       },
       update: { quantity: { increment: quantity } },
       create: {

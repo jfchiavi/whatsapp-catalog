@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { PRODUCTS } from "../data/products";
 import { useDebounce } from "./useDebounce";
 

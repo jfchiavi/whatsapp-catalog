@@ -1,4 +1,4 @@
-export const parseWhatsAppMessage = (message: string) => {
+export const parseWhatsAppMessage = () => {
 // Simulación simple
 return {
     items: [

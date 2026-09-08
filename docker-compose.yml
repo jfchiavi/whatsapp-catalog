@@ -1,21 +1,62 @@
 version: '3.8'
 
 services:
-  db:
-    image: postgres:16 # Usa una versión específica en lugar de latest
-    container_name: postgres_db
+  postgres:
+    image: postgres:16
+    container_name: catalog_postgres
     restart: always
+    env_file:
+      - .env.docker
     environment:
-      # Estas variables se cargarán automáticamente desde el archivo .env
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:-devuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev20141201}
+      POSTGRES_DB: ${POSTGRES_DB:-catalogdb}
     ports:
-      # Mapea el puerto 5432 del contenedor al puerto 5432 de tu máquina local
       - "5432:5432"
     volumes:
-      # Persiste los datos de la base de datos en un volumen local
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: catalog_backend
+    restart: always
+    env_file:
+      - .env.docker
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-devuser}:${POSTGRES_PASSWORD:-dev20141201}@postgres:5432/${POSTGRES_DB:-catalogdb}
+      FRONTEND_URL: http://localhost:80
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+    container_name: catalog_frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:

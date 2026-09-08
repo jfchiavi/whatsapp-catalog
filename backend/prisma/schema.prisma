@@ -10,7 +10,8 @@ datasource db {
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 enum Role {
@@ -79,6 +80,8 @@ model Branch {
   users User[]
   stock Stock[]
   sales Sale[]
+  stockMovementsFrom StockMovement[] @relation("StockMovementFromBranch")
+  stockMovementsTo   StockMovement[] @relation("StockMovementToBranch")
 }
 
 model Product {
@@ -140,6 +143,8 @@ model StockMovement {
   user         User?    @relation(fields: [userId], references: [id])
   tenantId     String
   tenant       Tenant   @relation(fields: [tenantId], references: [id])
+  fromBranch   Branch?  @relation("StockMovementFromBranch", fields: [fromBranchId], references: [id])
+  toBranch     Branch?  @relation("StockMovementToBranch", fields: [toBranchId], references: [id])
   createdAt    DateTime @default(now())
 }
 

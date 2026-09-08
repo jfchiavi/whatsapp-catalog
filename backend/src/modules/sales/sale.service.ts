@@ -33,13 +33,11 @@ export const createSale = async (
 ) => {
   return prisma.$transaction(async (tx) => {
     let total = 0;
+    const itemData: { variantId: string; quantity: number; price: number }[] = [];
 
-    // Validate that branch exists and belongs to same tenant
     const branch = await tx.branch.findUnique({
       where: { id: branchId },
-      include: {
-        tenant: true,
-      },
+      include: { tenant: true },
     });
 
     if (!branch) {
@@ -53,23 +51,20 @@ export const createSale = async (
     for (const item of items) {
       const variant = await tx.variant.findUnique({
         where: { id: item.variantId },
-        include: {
-          product: true,
-        },
+        include: { product: true },
       });
 
       if (!variant || !variant.product.active) {
         throw new Error('Invalid or inactive variant');
       }
 
-      // Validate that variant belongs to same tenant
       if (variant.tenantId !== tenantId) {
         throw new Error('Variant does not belong to user\'s tenant');
       }
 
       const stock = await tx.stock.findUnique({
         where: {
-          variantId_branchId_tenantId: {
+          tenantId_variantId_branchId: {
             variantId: item.variantId,
             branchId,
             tenantId,
@@ -81,11 +76,13 @@ export const createSale = async (
         throw new Error('Insufficient stock');
       }
 
-      total += variant.price * item.quantity;
+      const itemTotal = variant.price * item.quantity;
+      total += itemTotal;
+      itemData.push({ variantId: item.variantId, quantity: item.quantity, price: variant.price });
 
       await tx.stock.update({
         where: {
-          variantId_branchId_tenantId: {
+          tenantId_variantId_branchId: {
             variantId: item.variantId,
             branchId,
             tenantId,
@@ -98,7 +95,7 @@ export const createSale = async (
         data: {
           variantId: item.variantId,
           fromBranchId: branchId,
-          toBranchId: branchId, // For sales, from and to are the same branch
+          toBranchId: branchId,
           quantity: item.quantity,
           type: 'SALE',
           userId,
@@ -114,10 +111,11 @@ export const createSale = async (
         total,
         tenantId,
         items: {
-          create: items.map((item) => ({
-            variantId: item.variantId,
+          create: itemData.map((item) => ({
             quantity: item.quantity,
-            price: 0, // price snapshot - will be filled from variant.price at time of sale
+            price: item.price,
+            tenant: { connect: { id: tenantId } },
+            variant: { connect: { id: item.variantId } },
           })),
         },
       },

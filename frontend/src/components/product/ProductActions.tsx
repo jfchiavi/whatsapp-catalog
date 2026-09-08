@@ -11,7 +11,6 @@ interface Props {
 
 export const ProductActions = ({ product, quantity }: Props) => {
   const add = useCartStore(s => s.add);
-  const items = useCartStore(s => s.items);
 
   const buyNow = () => {
     const url = whatsappUrl([

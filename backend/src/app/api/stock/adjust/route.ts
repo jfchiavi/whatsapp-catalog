@@ -20,9 +20,10 @@ export async function POST(req: NextRequest) {
 
   try {
     const stock = await adjustStock(
-      parsed.data.productId,
+      parsed.data.variantId,
       parsed.data.branchId,
-      parsed.data.quantity
+      parsed.data.quantity,
+      auth.userId
     );
     return NextResponse.json({ success: true, data: stock });
   } catch (error: any) {

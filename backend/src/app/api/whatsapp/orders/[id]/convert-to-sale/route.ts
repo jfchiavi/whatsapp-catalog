@@ -5,7 +5,7 @@ import { convertWhatsappToSale } from '@/modules/whatsapp/whatsapp.service';
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
@@ -16,12 +16,13 @@ export async function POST(
   const body = await req.json();
 
   try {
+    const { id } = await params;
     const sale = await convertWhatsappToSale(
-      params.id,
+      id,
       auth.userId,
       auth.branchId!,
-      body.items,
-      auth.tenantId 
+      auth.tenantId,
+      body.items
     );
     return NextResponse.json({ success: true, data: sale });
   } catch (error: any) {

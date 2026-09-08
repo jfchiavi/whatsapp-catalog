@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { authMiddleware } from '@/middlewares/auth.middleware';
 import { permissionMiddleware } from '@/middlewares/permission.middleware';
 import { createProductSchema} from '@/validators/product.schema';
@@ -34,7 +35,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(parsed.error, { status: 400 });
   }
   try {
-      const product = await createProduct({ ...parsed.data, tenantId: auth.tenantId });
+      const product = await createProduct({
+        ...parsed.data,
+        tenantId: auth.tenantId,
+        baseAttributes: parsed.data.baseAttributes as Prisma.InputJsonValue,
+      });
     return NextResponse.json({ success: true, data: product }, { status: 201 });
   } catch (error) {
     return handleError(error);

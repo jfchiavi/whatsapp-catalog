@@ -3,7 +3,7 @@ import { authMiddleware } from '@/middlewares/auth.middleware';
 import { permissionMiddleware } from '@/middlewares/permission.middleware';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(req: NextRequest, { params }: { params: { branchId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ branchId: string }> }) {
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
 
@@ -11,7 +11,7 @@ export async function GET(req: NextRequest, { params }: { params: { branchId: st
   if (perm) return perm;
 
   try {
-    const { branchId } = params;
+    const { branchId } = await params;
 
     // Validate that branch exists and user has access
     const branch = await prisma.branch.findUnique({

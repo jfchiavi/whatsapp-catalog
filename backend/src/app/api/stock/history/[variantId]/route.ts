@@ -3,7 +3,7 @@ import { authMiddleware } from '@/middlewares/auth.middleware';
 import { permissionMiddleware } from '@/middlewares/permission.middleware';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(req: NextRequest, { params }: { params: { variantId: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ variantId: string }> }) {
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
 
@@ -11,7 +11,7 @@ export async function GET(req: NextRequest, { params }: { params: { variantId: s
   if (perm) return perm;
 
   try {
-    const { variantId } = params;
+    const { variantId } = await params;
 
     // Validate that variant exists and user has access to its tenant
     const variant = await prisma.variant.findUnique({
