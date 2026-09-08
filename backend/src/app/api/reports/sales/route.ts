@@ -8,7 +8,8 @@ export async function GET(req: NextRequest) {
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
 
-  permissionMiddleware(auth.role, 'reports');
+  const perm = permissionMiddleware(auth.role, 'reports');
+  if (perm) return perm;
 
   const { searchParams } = new URL(req.url);
   const from = searchParams.get('from');
@@ -23,8 +24,8 @@ export async function GET(req: NextRequest) {
     );
   }
   try {
-    const report = await getSalesReport(fromDate, toDate);
-    return NextResponse.json(report);
+    const report = await getSalesReport(fromDate, toDate, auth.tenantId);
+    return NextResponse.json({ success: true, data: report });
   } catch (error) {
     console.error('REPORT SALES ERROR', error);
     return handleError(error);

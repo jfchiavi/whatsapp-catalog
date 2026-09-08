@@ -8,5 +8,5 @@ export async function POST(req: Request) {
     where: { token: refreshToken },
   });
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, data: { loggedOut: true } });
 }

@@ -9,10 +9,12 @@ export async function GET(req: NextRequest) {
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
 
-  permissionMiddleware(auth.role, 'products');
+  const perm = permissionMiddleware(auth.role, 'products');
+  if (perm) return perm;
+
   try {
     const products = await getProducts(auth.tenantId);
-    return NextResponse.json(products);
+    return NextResponse.json({ success: true, data: products });
   } catch (error) {
     return handleError(error);
   }
@@ -22,7 +24,8 @@ export async function POST(req: NextRequest) {
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
 
-  permissionMiddleware(auth.role, 'products');
+  const perm2 = permissionMiddleware(auth.role, 'products');
+  if (perm2) return perm2;
 
   const body = await req.json();
   const parsed = createProductSchema.safeParse(body);
@@ -32,7 +35,7 @@ export async function POST(req: NextRequest) {
   }
   try {
       const product = await createProduct({ ...parsed.data, tenantId: auth.tenantId });
-    return NextResponse.json(product, { status: 201 });
+    return NextResponse.json({ success: true, data: product }, { status: 201 });
   } catch (error) {
     return handleError(error);
   }

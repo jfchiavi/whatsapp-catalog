@@ -21,28 +21,28 @@ export async function POST(req: Request) {
   const parsed = loginSchema.safeParse(body);
 
   if (!parsed.success) {
-    return NextResponse.json(parsed.error, { status: 400 });
+    return NextResponse.json(
+      { success: false, error: { code: 'VALIDATION_ERROR', message: parsed.error.message } },
+      { status: 400 }
+    );
   }
 
   const { email, password } = parsed.data;
 
-  // `email` is not a standalone unique key in the Prisma model.
-  // Users are unique by the compound index `[email, tenantId]`, so use
-  // `findFirst` when the login payload contains only email + password.
   const user = await prisma.user.findFirst({ where: { email } });
 
   if (!user) {
     return NextResponse.json(
-      { message: 'Invalid credentials' },
+      { success: false, error: { code: 'INVALID_CREDENTIALS', message: 'Invalid credentials' } },
       { status: 401 }
     );
   }
-  console.log('BACK: User found:', user);
+
   const isValid = await comparePassword(password, user.password);
 
   if (!isValid) {
     return NextResponse.json(
-      { message: 'Invalid credentials' },
+      { success: false, error: { code: 'INVALID_CREDENTIALS', message: 'Invalid credentials' } },
       { status: 401 }
     );
   }
@@ -65,12 +65,15 @@ export async function POST(req: Request) {
     },
   });
 
-const userResponse = generateUserResponse(user);
+  const userResponse = generateUserResponse(user);
 
   return NextResponse.json({
-    accessToken,
-    refreshToken,
-    userResponse,
+    success: true,
+    data: {
+      accessToken,
+      refreshToken,
+      user: userResponse,
+    },
   });
 }
 

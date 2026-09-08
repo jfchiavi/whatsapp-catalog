@@ -8,24 +8,19 @@ export async function GET(req: NextRequest) {
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
 
-  permissionMiddleware(auth.role, 'dashboard');
+  const perm = permissionMiddleware(auth.role, 'dashboard');
+  if (perm) return perm;
 
   const users = await getUsers(auth.tenantId, auth.role, auth.branchId);
-  return NextResponse.json(users);
+  return NextResponse.json({ success: true, data: users });
 }
 
 export async function POST(req: NextRequest) {
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
 
-  permissionMiddleware(auth.role, 'dashboard');
-
-  if (auth.role !== 'SUPER_ADMIN') {
-    return NextResponse.json(
-      { message: 'Forbidden' },
-      { status: 403 }
-    );
-  }
+  const perm2 = permissionMiddleware(auth.role, 'dashboard');
+  if (perm2) return perm2;
 
   const body = await req.json();
   const parsed = createUserSchema.safeParse(body);
@@ -35,5 +30,5 @@ export async function POST(req: NextRequest) {
   }
 
   const user = await createUser({ ...parsed.data, tenantId: auth.tenantId });
-  return NextResponse.json(user, { status: 201 });
+  return NextResponse.json({ success: true, data: user }, { status: 201 });
 }

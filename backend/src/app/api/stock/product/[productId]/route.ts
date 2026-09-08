@@ -10,9 +10,10 @@ export async function GET(
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
 
-  permissionMiddleware(auth.role, 'stock');
+  const perm = permissionMiddleware(auth.role, 'stock');
+  if (perm) return perm;
 
   const { productId } = params;
   const stock = await getStockByProduct(productId);
-  return NextResponse.json(stock);
+  return NextResponse.json({ success: true, data: stock });
 }

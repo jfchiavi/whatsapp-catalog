@@ -13,11 +13,12 @@ export async function GET(
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
 
-  permissionMiddleware(auth.role, 'products');
+  const perm = permissionMiddleware(auth.role, 'products');
+  if (perm) return perm;
 
   try {
     const product = await getProductById(params.id, auth.tenantId);
-    return NextResponse.json(product);
+    return NextResponse.json({ success: true, data: product });
   } catch (error) {
     return handleError(error);
   }
@@ -30,7 +31,9 @@ export async function PUT(
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) 
     return auth;
-  permissionMiddleware(auth.role, 'products');
+  const perm2 = permissionMiddleware(auth.role, 'products');
+  if (perm2) return perm2;
+
   try {
       const body = await req.json();
       const parsed = updateProductSchema.safeParse(body);
@@ -42,7 +45,7 @@ export async function PUT(
       }
 
       const product = await updateProduct(parameter.id, auth.tenantId, parsed.data);
-      return NextResponse.json(product);
+      return NextResponse.json({ success: true, data: product });
   } catch (error) {
     return handleError(error);
   }
@@ -57,7 +60,8 @@ export async function DELETE(
   if (auth instanceof NextResponse) 
     return auth;
 
-  permissionMiddleware(auth.role, 'products');
+  const perm3 = permissionMiddleware(auth.role, 'products');
+  if (perm3) return perm3;
 
   try {    
     const parameter = await params;
@@ -65,7 +69,7 @@ export async function DELETE(
     await deleteProduct(parameter.id, auth.tenantId);
 
     return NextResponse.json(
-      { message: 'Product deleted successfully' }, 
+      { success: true, data: { message: 'Product deleted successfully' } }, 
       { status: 200 });
 
   } catch (error) {

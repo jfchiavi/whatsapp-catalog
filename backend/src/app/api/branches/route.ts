@@ -12,22 +12,19 @@ export async function GET(req: NextRequest) {
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
 
-  permissionMiddleware(auth.role, 'dashboard');
+  const perm = permissionMiddleware(auth.role, 'dashboard');
+  if (perm) return perm;
 
   const branches = await getBranches(auth.tenantId);
-  return NextResponse.json(branches);
+  return NextResponse.json({ success: true, data: branches });
 }
 
 export async function POST(req: NextRequest) {
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
 
-  if (auth.role !== 'SUPER_ADMIN') {
-    return NextResponse.json(
-      { message: 'Forbidden' },
-      { status: 403 }
-    );
-  }
+  const perm2 = permissionMiddleware(auth.role, 'dashboard');
+  if (perm2) return perm2;
 
   const body = await req.json();
   const parsed = createBranchSchema.safeParse(body);
@@ -38,7 +35,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const branch = await createBranch({ ...parsed.data, tenantId: auth.tenantId });
-    return NextResponse.json(branch, { status: 201 });    
+    return NextResponse.json({ success: true, data: branch }, { status: 201 });    
   } catch (error) {
     return handleError(error);
   }

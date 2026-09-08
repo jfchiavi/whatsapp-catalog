@@ -10,7 +10,8 @@ export async function POST(
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
 
-  permissionMiddleware(auth.role, 'whatsapp_orders');
+  const perm = permissionMiddleware(auth.role, 'whatsapp_orders');
+  if (perm) return perm;
 
   const body = await req.json();
 
@@ -22,7 +23,7 @@ export async function POST(
       body.items,
       auth.tenantId 
     );
-    return NextResponse.json(sale);
+    return NextResponse.json({ success: true, data: sale });
   } catch (error: any) {
     return NextResponse.json(
       { message: error.message },

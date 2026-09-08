@@ -11,7 +11,8 @@ export async function PUT(
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
 
-  permissionMiddleware(auth.role, 'whatsapp_orders');
+  const perm = permissionMiddleware(auth.role, 'whatsapp_orders');
+  if (perm) return perm;
 
   const body = await req.json();
   const parsed = updateWhatsappStatusSchema.safeParse(body);
@@ -21,5 +22,5 @@ export async function PUT(
   }
 
   const order = await updateWhatsappStatus(params.id, auth.tenantId, parsed.data.status);
-  return NextResponse.json(order);
+  return NextResponse.json({ success: true, data: order });
 }

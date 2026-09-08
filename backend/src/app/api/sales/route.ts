@@ -8,12 +8,13 @@ export async function GET(req: NextRequest) {
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
 
-  permissionMiddleware(auth.role, 'sales');
+  const perm = permissionMiddleware(auth.role, 'sales');
+  if (perm) return perm;
 
   try {
     const branchId = auth.branchId || undefined;
     const sales = await getSales(auth.tenantId, branchId);
-    return NextResponse.json(sales);
+    return NextResponse.json({ success: true, data: sales });
   } catch (error: any) {
     return NextResponse.json(
       { message: error.message },
@@ -26,7 +27,8 @@ export async function POST(req: NextRequest) {
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
 
-  permissionMiddleware(auth.role, 'sales');
+  const perm2 = permissionMiddleware(auth.role, 'sales');
+  if (perm2) return perm2;
 
   const body = await req.json();
   console.log('BACK: Received sale creation request:', body);
@@ -68,7 +70,7 @@ export async function POST(req: NextRequest) {
       auth.tenantId,
       parsed.data.items
     );
-    return NextResponse.json(sale, { status: 201 });
+    return NextResponse.json({ success: true, data: sale }, { status: 201 });
   } catch (error: any) {
     return NextResponse.json(
       { message: error.message },

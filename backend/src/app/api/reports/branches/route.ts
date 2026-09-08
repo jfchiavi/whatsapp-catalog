@@ -7,8 +7,9 @@ export async function GET(req: NextRequest) {
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
 
-  permissionMiddleware(auth.role, 'reports');
+  const perm = permissionMiddleware(auth.role, 'reports');
+  if (perm) return perm;
 
-  const report = await getBranchComparison();
-  return NextResponse.json(report);
+  const report = await getBranchComparison(auth.tenantId);
+  return NextResponse.json({ success: true, data: report });
 }

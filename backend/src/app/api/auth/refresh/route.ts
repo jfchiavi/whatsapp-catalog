@@ -17,7 +17,7 @@ export async function POST(req: Request) {
 
     if (!tokenInDb) {
       return NextResponse.json(
-        { message: 'Invalid refresh token' },
+        { success: false, error: { code: 'INVALID_TOKEN', message: 'Invalid refresh token' } },
         { status: 401 }
       );
     }
@@ -28,7 +28,7 @@ export async function POST(req: Request) {
 
     if (!user) {
       return NextResponse.json(
-        { message: 'User not found' },
+        { success: false, error: { code: 'USER_NOT_FOUND', message: 'User not found' } },
         { status: 401 }
       );
     }
@@ -40,10 +40,10 @@ export async function POST(req: Request) {
       branchId: user.branchId,
     });
 
-    return NextResponse.json({ accessToken: newAccessToken });
+    return NextResponse.json({ success: true, data: { accessToken: newAccessToken } });
   } catch {
     return NextResponse.json(
-      { message: 'Invalid refresh token' },
+      { success: false, error: { code: 'INVALID_TOKEN', message: 'Invalid refresh token' } },
       { status: 401 }
     );
   }

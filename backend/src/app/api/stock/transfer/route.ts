@@ -8,7 +8,8 @@ export async function POST(req: NextRequest) {
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
 
-  permissionMiddleware(auth.role, 'stock');
+  const perm = permissionMiddleware(auth.role, 'stock');
+  if (perm) return perm;
 
   const body = await req.json();
   const parsed = transferStockSchema.safeParse(body);
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
       parsed.data.toBranchId,
       parsed.data.quantity
     );
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, data: { transferred: true } });
   } catch (error: any) {
     return NextResponse.json(
       { message: error.message },

@@ -7,7 +7,8 @@ export async function GET(req: NextRequest, { params }: { params: { branchId: st
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
 
-  permissionMiddleware(auth.role, 'stock');
+  const perm = permissionMiddleware(auth.role, 'stock');
+  if (perm) return perm;
 
   try {
     const { branchId } = params;
@@ -80,7 +81,7 @@ export async function GET(req: NextRequest, { params }: { params: { branchId: st
       quantity: item.quantity,
     }));
 
-    return NextResponse.json(formattedStock);
+    return NextResponse.json({ success: true, data: formattedStock });
   } catch (error: any) {
     return NextResponse.json(
       { message: error.message },

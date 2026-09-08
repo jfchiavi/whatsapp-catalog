@@ -11,9 +11,10 @@ export async function GET(
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
 
-  permissionMiddleware(auth.role, 'sales');
-  // asynchronous access of `params.id`.
-  const { id } = await params
+  const perm = permissionMiddleware(auth.role, 'sales');
+  if (perm) return perm;
+
+  const { id } = await params;
   try {
       const sale = await prisma.sale.findUnique({
         where: { id: id },
@@ -26,7 +27,7 @@ export async function GET(
         },
       });
 
-    return NextResponse.json(sale);
+    return NextResponse.json({ success: true, data: sale });
   } catch (error) {
     return handleError(error);
   }

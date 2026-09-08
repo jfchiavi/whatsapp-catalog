@@ -7,7 +7,8 @@ export async function GET(req: NextRequest, { params }: { params: { variantId: s
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
 
-  permissionMiddleware(auth.role, 'stock');
+  const perm = permissionMiddleware(auth.role, 'stock');
+  if (perm) return perm;
 
   try {
     const { variantId } = params;
@@ -77,7 +78,7 @@ export async function GET(req: NextRequest, { params }: { params: { variantId: s
       createdAt: movement.createdAt,
     }));
 
-    return NextResponse.json(formattedHistory);
+    return NextResponse.json({ success: true, data: formattedHistory });
   } catch (error: any) {
     return NextResponse.json(
       { message: error.message },

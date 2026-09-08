@@ -11,13 +11,17 @@ export async function GET(req: NextRequest) {
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
 
-  permissionMiddleware(auth.role, 'whatsapp_orders');
+  const perm = permissionMiddleware(auth.role, 'whatsapp_orders');
+  if (perm) return perm;
 
   const orders = await getWhatsappOrders(auth.tenantId);
-  return NextResponse.json(orders);
+  return NextResponse.json({ success: true, data: orders });
 }
 
 export async function POST(req: NextRequest) {
+  const auth = authMiddleware(req);
+  if (auth instanceof NextResponse) return auth;
+
   const body = await req.json();
   const parsed = createWhatsappOrderSchema.safeParse(body);
 
@@ -26,5 +30,5 @@ export async function POST(req: NextRequest) {
   }
 
   const order = await createWhatsappOrder({ ...parsed.data, tenantId: auth.tenantId });
-  return NextResponse.json(order, { status: 201 });
+  return NextResponse.json({ success: true, data: order }, { status: 201 });
 }
