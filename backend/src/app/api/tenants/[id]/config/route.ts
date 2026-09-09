@@ -5,6 +5,47 @@ import { permissionMiddleware } from '@/middlewares/permission.middleware';
 import { updateTenantConfigSchema } from '@/validators/tenant.schema';
 import { handleError } from '@/lib/errors';
 
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = authMiddleware(req);
+  if (auth instanceof NextResponse) return auth;
+
+  const perm = permissionMiddleware(auth.role, 'tenants');
+  if (perm) return perm;
+
+  try {
+    const { id } = await params;
+
+    const tenant = await prisma.tenant.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        domain: true,
+        logoUrl: true,
+        primaryColor: true,
+        description: true,
+        whatsappNumber: true,
+        active: true,
+      },
+    });
+
+    if (!tenant) {
+      return NextResponse.json(
+        { success: false, error: { code: 'TENANT_NOT_FOUND', message: 'Tenant not found' } },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true, data: tenant });
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
