@@ -15,4 +15,5 @@ export interface AuthUser {
     email: string;
     role: string; // considerar si se tiene que cambiar a UserRole.
     branchId: string | null;
+    tenantId: string | null;
 }

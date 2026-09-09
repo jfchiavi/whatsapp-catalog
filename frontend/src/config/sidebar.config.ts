@@ -5,6 +5,7 @@ import {
   BarChart,
   CirclePile,
   Users,
+  Settings,
 } from 'lucide-react';
 import type { Permission } from '@/types/permissions';
 
@@ -51,5 +52,11 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     path: '/users',
     icon: Users,
     permission: 'users',
+  },
+  {
+    label: 'Configuración',
+    path: '/dashboard/settings',
+    icon: Settings,
+    permission: 'tenants',
   },
 ];

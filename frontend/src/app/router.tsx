@@ -14,6 +14,7 @@ import StockPage from '@/features/stock/StockPage';
 import SalesListPage from '@/features/sales/SalesListPage';
 import CreateSalePage from '@/features/sales/CreateSalePage';
 import ReportsPage from '@/features/reports/ReportsPage';
+import TenantSettingsPage from '@/features/settings/TenantSettingsPage';
 import ErrorPage from '@/components/dashboard/layout/ErrorPage';
 
 export const router = createBrowserRouter([
@@ -43,7 +44,13 @@ export const router = createBrowserRouter([
       {
         element: <DashboardLayout />,
         children: [
-          { path: '/dashboard', lazy:async () => {return {Component: HomeDashBoard};} },
+          {
+            path: '/dashboard',
+            children: [
+              { index: true, lazy:async () => {return {Component: HomeDashBoard};} },
+              { path: 'settings', lazy: async () => {return {Component: TenantSettingsPage }}},
+            ],
+          },
           { path: '/products', lazy: async () => {return {Component: ProductsPage}; }},
           { path: '/stock', lazy: async () => {return {Component: StockPage }}},
           { path: '/sales', lazy: async () => {return {Component: SalesListPage }} },

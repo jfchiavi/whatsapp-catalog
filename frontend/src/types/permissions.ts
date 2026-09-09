@@ -4,4 +4,5 @@ export type Permission =
   | 'stock'
   | 'sales'
   | 'reports'
-  | 'users';
+  | 'users'
+  | 'tenants';

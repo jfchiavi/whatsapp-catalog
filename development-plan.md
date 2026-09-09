@@ -67,6 +67,40 @@ curl -H "X-Tenant-ID: b63747fe-2573-5214-b490-32828299d672" \
 ```
 Cada tenant debe mostrar solo sus productos. Los IDs de productos, variantes y atributos NO deben mezclarse.
 
+## Slice 1.1: Catálogo Multi-Tenant y Marketplace
+
+### Objetivo
+
+Páginas de catálogo por tenant con configuración independiente, marketplace global, y dashboard de configuración.
+
+### Checks de implementación
+
+- [x] Schema Prisma: campos `slug`, `domain`, `logoUrl`, `primaryColor`, `description`, `whatsappNumber` en Tenant
+- [x] Migración `20260908130000_add_tenant_config`
+- [x] API `GET /api/tenant/resolve` — resolución por domain/slug/header
+- [x] API `GET /api/tenant/:slug/config` — config pública del tenant
+- [x] API `GET /api/marketplace/products` — productos de todos los tenants
+- [x] API `PUT /api/tenants/:id/config` — actualizar config (SUPER_ADMIN)
+- [x] TenantProvider — detecta tenant desde dominio/subdominio/ruta
+- [x] useTenant hook — retorna config del tenant
+- [x] Rutas: `/t/:slug` (catálogo), `/t/:slug/product/:id` (detalle), `/` (marketplace)
+- [x] Cart store: aislamiento por tenant + deduplicación de items
+- [x] CartItem.tsx: fix campos `imageUrl` y `variant.price`
+- [x] WhatsApp: usa `whatsappNumber` del tenant
+- [x] Settings UI: `/dashboard/settings` con formulario de configuración
+- [x] Sidebar: link de "Configuración" para SUPER_ADMIN
+
+### Checks de validación manual
+
+- [ ] Abrir `http://localhost/t/demo` y verificar productos de Demo Tenant
+- [ ] Abrir `http://localhost/t/fashion` y verificar productos de Fashion Tenant
+- [ ] Confirmar que nombre, colores y WhatsApp son diferentes por tenant
+- [ ] Abrir `http://localhost/` y verificar marketplace con productos de ambos tenants
+- [ ] Login como `admin@demo.com` → ir a `/dashboard/settings` → cambiar nombre → guardar
+- [ ] Verificar que el cambio se refleja en `http://localhost/t/demo`
+- [ ] Login como `seller@demo.com` → verificar que NO ve el link de Configuración
+- [ ] Agregar producto al carrito en Demo Tenant → cambiar a Fashion Tenant → carrito vacío
+
 ## Slice 2: Sucursales y gestión de stock
 
 ### Objetivo
@@ -131,9 +165,10 @@ Actualizar esta sección después de cada sesión de trabajo. `[x]` requiere evi
 
 - [ ] Slice 0 completo
 - [ ] Slice 1 completo (implementación completa, validación manual pendiente)
+- [ ] Slice 1.1 completo (implementación completa, validación manual pendiente)
 - [ ] Slice 2 completo
 - [ ] Slice 3 completo
-- [ ] Próximo slice activo: Slice 1 (validación manual pendiente)
-- [x] Última actualización: Slice 1 implementación completada
+- [ ] Próximo slice activo: Slice 1.1 (validación manual pendiente)
+- [x] Última actualización: Slice 1.1 implementación completada
 
 Cuando el usuario solicite **“Actualizar progreso”**, comparar este checklist con el código actual y con la evidencia proporcionada. Cuando solicite **“Continuar con el Slice #”**, trabajar únicamente en ese slice, mantener los contratos anteriores y actualizar esta sección al terminar.
