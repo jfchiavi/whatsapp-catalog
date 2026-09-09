@@ -55,6 +55,18 @@ Administrar productos y variantes dinámicas, y exponer un catálogo público ai
 - [ ] Desactivar un producto y confirmar que ya no aparece como vendible en el catálogo.
 - [ ] Abrir el catálogo de dos tenants y confirmar que nombre, imagen, variantes y atributos no se mezclan.
 
+**Para probar aislamiento entre tenants (seed con 2 tenants):**
+```bash
+# Tenant Demo (remeras, jeans, zapatillas)
+curl -H "X-Tenant-ID: 0b95f160-f948-5ac3-921a-56029e130fa9" \
+  http://localhost:3000/api/catalog/products | jq
+
+# Fashion Tenant (camperas de cuero, bufandas)
+curl -H "X-Tenant-ID: b63747fe-2573-5214-b490-32828299d672" \
+  http://localhost:3000/api/catalog/products | jq
+```
+Cada tenant debe mostrar solo sus productos. Los IDs de productos, variantes y atributos NO deben mezclarse.
+
 ## Slice 2: Sucursales y gestión de stock
 
 ### Objetivo
