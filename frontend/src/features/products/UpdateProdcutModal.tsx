@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { Product } from '@/types/product';
+import type { Product, UpdateProductInput } from '@/types/product';
 
 export function UpdateProductModal({
   product,
@@ -8,72 +8,77 @@ export function UpdateProductModal({
 }: {
   product: Product;
   onClose: () => void;
-  onSubmit: (data: Partial<Product>) => void;
+  onSubmit: (data: UpdateProductInput) => void;
 }) {
-  const [form, setForm] = useState({
-    sku: '',
+  const [form, setForm] = useState<UpdateProductInput>({
     name: '',
-    price: 0,
-    cost: 0,
+    imageUrl: '',
+    batch: '',
     active: true,
   });
 
   useEffect(() => {
     if (product) {
       setForm({
-        sku: product.sku,
         name: product.name,
-        price: product.price,
-        cost: product.cost,
+        imageUrl: product.imageUrl ?? '',
+        batch: product.batch ?? '',
         active: product.active,
       });
     }
   }, [product]);
 
+  const handleSubmit = () => {
+    onSubmit({
+      ...form,
+      imageUrl: form.imageUrl || undefined,
+      batch: form.batch || undefined,
+    });
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl w-full max-w-md p-6 space-y-4">
         <h2 className="text-lg font-semibold">Editar producto</h2>
 
-        {['sku', 'name'].map((field) => (
+        <input
+          placeholder="Nombre"
+          className="w-full border rounded p-2"
+          value={form.name ?? ''}
+          onChange={(e) => setForm({ ...form, name: e.target.value })}
+        />
+
+        <input
+          placeholder="URL de imagen (opcional)"
+          className="w-full border rounded p-2"
+          value={form.imageUrl ?? ''}
+          onChange={(e) => setForm({ ...form, imageUrl: e.target.value || undefined })}
+        />
+
+        <input
+          placeholder="Lote (opcional)"
+          className="w-full border rounded p-2"
+          value={form.batch ?? ''}
+          onChange={(e) => setForm({ ...form, batch: e.target.value || undefined })}
+        />
+
+        <label className="flex items-center gap-2">
           <input
-            key={field}
-            placeholder={field.toUpperCase()}
-            className="w-full border rounded p-2"
-            value={(form as any)[field]}
-            onChange={(e) =>
-              setForm({ ...form, [field]: e.target.value })
-            }
+            type="checkbox"
+            checked={form.active ?? true}
+            onChange={(e) => setForm({ ...form, active: e.target.checked })}
           />
-        ))}
-
-        <input
-          type="number"
-          placeholder="Precio"
-          className="w-full border rounded p-2"
-          value={form.price}
-          onChange={(e) =>
-            setForm({ ...form, price: Number(e.target.value) })
-          }
-        />
-
-        <input
-          type="number"
-          placeholder="Costo"
-          className="w-full border rounded p-2"
-          value={form.cost}
-          onChange={(e) =>
-            setForm({ ...form, cost: Number(e.target.value) })
-          }
-        />
+          <span>Activo</span>
+        </label>
 
         <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="px-3 py-1">
+          <button onClick={onClose} className="px-3 py-1 border rounded">
             Cancelar
           </button>
           <button
-            onClick={() => onSubmit(form)}
-            className="px-4 py-2 bg-black text-white rounded"
+            onClick={handleSubmit}
+            disabled={!form.name}
+            className="px-4 py-2 bg-black text-white rounded disabled:opacity-50"
           >
             Guardar cambios
           </button>

@@ -1,13 +1,15 @@
+import { SEED_IDS } from '@/mocks/data';
+
 export const parseWhatsAppMessage = () => {
 // Simulación simple
 return {
     items: [
         {
-            productId: 'prod-001',
-            name: 'Producto Demo',
+            variantId: SEED_IDS.variantTshirtRedM,
+            name: 'Remera Oversize',
             quantity: 1,
         },
     ],
-    total: 100,
+    total: 8500,
     };
 };

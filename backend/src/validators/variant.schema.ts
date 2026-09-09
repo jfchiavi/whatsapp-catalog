@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const createVariantSchema = z.object({
-  productId: z.string().uuid(),
+  productId: z.string().min(1),
   sku: z.string().min(3),
   price: z.number().positive(),
   cost: z.number().nonnegative(),

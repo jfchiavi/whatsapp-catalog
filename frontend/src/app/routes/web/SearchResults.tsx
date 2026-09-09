@@ -1,17 +1,19 @@
 import { useSearchParams } from "react-router-dom";
-import { PRODUCTS } from "../../../data/products";
+import { useCatalogProducts } from "@/hooks/useCatalog";
 import { Header } from "../../../components/header/Header";
 import { ProductCard } from "../../../components/product/ProductCard";
 
 export default function SearchResults() {
   const [params] = useSearchParams();
   const q = params.get("q")?.toLowerCase() || "";
+  const { data: products, isLoading } = useCatalogProducts();
 
-  const results = PRODUCTS.filter(p =>
-    `${p.name} ${p.description} ${p.category}`
-      .toLowerCase()
-      .includes(q)
-  );
+  const results =
+    products?.filter((p) =>
+      `${p.name} ${p.batch || ""}`
+        .toLowerCase()
+        .includes(q)
+    ) || [];
 
   return (
     <>
@@ -19,17 +21,17 @@ export default function SearchResults() {
 
       <main className="max-w-7xl mx-auto p-4">
         <h1 className="font-semibold mb-4">
-          Resultados para “{q}”
+          Resultados para "{q}"
         </h1>
 
-        {results.length === 0 && (
-          <p className="text-gray-500">
-            No se encontraron productos
-          </p>
+        {isLoading && <p>Cargando...</p>}
+
+        {results.length === 0 && !isLoading && (
+          <p className="text-gray-500">No se encontraron productos</p>
         )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {results.map(p => (
+          {results.map((p) => (
             <ProductCard key={p.id} product={p} />
           ))}
         </div>

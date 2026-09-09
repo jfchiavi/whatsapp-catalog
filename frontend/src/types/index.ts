@@ -1,9 +1,1 @@
-export interface Product {
-  id: number;
-  name: string;
-  description: string;
-  category: string;
-  price: number;
-  image: string;
-  inStock: boolean;
-}
+export type { Product, Variant, CreateProductInput, UpdateProductInput, CreateVariantInput, UpdateVariantInput } from './product';

@@ -1,6 +1,6 @@
 import { useSales } from '@/hooks/useSales';
 import { generateSalePDF } from '@/utils/pdfGenerator';
-
+import { SEED_IDS } from '@/mocks/data';
 
 export default function SalesPage() {
     const { create } = useSales();
@@ -8,14 +8,14 @@ export default function SalesPage() {
     const handleSale = async () => {
         const sale: any = {
             date: new Date().toISOString(),
-            branchId: 'branch-central',
-            sellerId: 'user-1',
+            branchId: SEED_IDS.branchCentral,
+            sellerId: SEED_IDS.userSeller,
             items: [
-                { productId: 'prod-001', name: 'Producto Demo', quantity: 1, price: 100 },
+                { variantId: SEED_IDS.variantTshirtRedM, name: 'Remera Oversize', quantity: 1, price: 8500 },
             ],
-            subtotal: 100,
+            subtotal: 8500,
             discount: 0,
-            total: 100,
+            total: 8500,
             paymentMethod: 'cash',
             status: 'completed',
         };

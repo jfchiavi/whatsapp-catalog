@@ -26,7 +26,7 @@ export function middleware(req: NextRequest) {
         'Access-Control-Allow-Origin': origin ?? '*',
         'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
         'Access-Control-Allow-Headers':
-          'Content-Type, Authorization',
+          'Content-Type, Authorization, X-Tenant-ID',
         'Access-Control-Allow-Credentials': 'true',
       },
     });
@@ -44,7 +44,7 @@ export function middleware(req: NextRequest) {
   );
   res.headers.set(
     'Access-Control-Allow-Headers',
-    'Content-Type, Authorization'
+    'Content-Type, Authorization, X-Tenant-ID'
   );
   res.headers.set('Access-Control-Allow-Credentials', 'true');
 

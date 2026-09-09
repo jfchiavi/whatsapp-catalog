@@ -3,7 +3,7 @@ import { StockBadge } from '../../components/dashboard/ui/StockBadge';
 
 
 export default function StockPage() {
-    const productId = 'prod-1'; // selector real luego
+    const productId = '0aa15edc-d718-5385-9e43-75b42902d59e'; // Remera Oversize
     const { data, isLoading } = useStock(productId);
 
 

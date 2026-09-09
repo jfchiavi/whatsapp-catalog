@@ -12,7 +12,7 @@ describe('Auth API routes', () => {
   afterAll(async () => {
     await prisma.refreshToken.deleteMany({
       where: {
-        userId: 'user-demo-admin',
+        userId: '3446d34c-deb5-58ef-8822-2b94fb6f5842',
       },
     });
     await prisma.$disconnect();

@@ -29,7 +29,6 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/node_modules/.prisma /app/node_modules/.prisma
 COPY --from=builder /app/node_modules/.prisma/client /app/node_modules/.prisma/client
-COPY seed-data.sh ./seed-data.sh
 
 EXPOSE 3000
 

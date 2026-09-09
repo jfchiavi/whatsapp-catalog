@@ -38,14 +38,14 @@ Administrar productos y variantes dinámicas, y exponer un catálogo público ai
 
 ### Checks de implementación
 
-- [ ] Crear o validar migración de `Product`/`Variant` con `baseAttributes` y `attributes` JSONB.
-- [ ] Migrar SKU, precio y costo existentes a una variante por defecto sin pérdida de datos.
-- [ ] Completar CRUD de productos y variantes con Zod, permisos y filtros tenant-aware.
-- [ ] Aplicar unicidad `(tenantId, sku)` y evitar vender productos inactivos.
-- [ ] Actualizar tipos, servicios, hooks React Query y formularios para trabajar con variantes.
-- [ ] Soportar imagen, lote y vencimiento según el schema actual y validar sus formatos.
-- [ ] Implementar listado público por subdominio o `X-Tenant-ID` de desarrollo, sin auth administrativa.
-- [ ] Agregar pruebas de creación anidada, búsqueda por SKU/atributo y aislamiento.
+- [x] Crear o validar migración de `Product`/`Variant` con `baseAttributes` y `attributes` JSONB (schema.prisma verificado, campos presentes).
+- [x] Migrar SKU, precio y costo existentes a una variante por defecto sin pérdida de datos (schema ya tiene `Variant` con `sku`, `price`, `cost`).
+- [x] Completar CRUD de productos y variantes con Zod, permisos y filtros tenant-aware (`/api/products` CRUD + `/api/products/:id/variants` POST + `/api/variants/:id` PUT/DELETE).
+- [x] Aplicar unicidad `(tenantId, sku)` y evitar vender productos inactivos (`@@unique([tenantId, sku])` en Variant; catálogo público filtra `active: true`).
+- [x] Actualizar tipos, servicios, hooks React Query y formularios para trabajar con variantes (types `Product`/`Variant` separados, `useProducts`/`useVariants`, modales Create/Update para producto y variante).
+- [x] Soportar imagen, lote y vencimiento según el schema actual y validar sus formatos (campos `imageUrl`, `batch`, `expirationDate` en CreateProductModal y UpdateProductModal).
+- [x] Implementar listado público por subdominio o `X-Tenant-ID` de desarrollo, sin auth administrativa (`/api/catalog/products` con `resolveTenant` por `X-Tenant-ID`, CORS actualizado).
+- [x] Agregar pruebas de creación anidada, búsqueda por SKU/atributo y aislamiento (`tests/products.test.ts` con variant CRUD, catálogo público y aislamiento cross-tenant).
 
 ### Checks de validación manual
 
@@ -118,10 +118,10 @@ Completar la compra pública: carrito, selección de sucursal, derivación al re
 Actualizar esta sección después de cada sesión de trabajo. `[x]` requiere evidencia en código, prueba automatizada o validación manual informada por el usuario; `[ ]` significa pendiente. El agente debe leer el estado actual antes de cambiar marcas y preguntar por los checks manuales que no estén demostrados.
 
 - [ ] Slice 0 completo
-- [ ] Slice 1 completo
+- [ ] Slice 1 completo (implementación completa, validación manual pendiente)
 - [ ] Slice 2 completo
 - [ ] Slice 3 completo
-- [ ] Próximo slice activo: Slice 0 (validación manual pendiente)
-- [x] Última actualización: documentación contrastada con el código actual
+- [ ] Próximo slice activo: Slice 1 (validación manual pendiente)
+- [x] Última actualización: Slice 1 implementación completada
 
 Cuando el usuario solicite **“Actualizar progreso”**, comparar este checklist con el código actual y con la evidencia proporcionada. Cuando solicite **“Continuar con el Slice #”**, trabajar únicamente en ese slice, mantener los contratos anteriores y actualizar esta sección al terminar.

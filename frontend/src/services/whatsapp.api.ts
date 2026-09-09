@@ -1,17 +1,21 @@
 import { api } from './api';
 import type { WhatsAppOrder } from '@/types/whatsapp';
+import { SEED_IDS } from '@/mocks/data';
 
 
 export const fetchWhatsAppOrders = async (): Promise<WhatsAppOrder[]> => {
     if (import.meta.env.VITE_USE_MOCKS === 'true') {
         return [
             {
-                id: 'wa-001',
+                id: SEED_IDS.waOrder1,
                 customerName: 'Juan Pérez',
-                customerPhone: '+5491122334455',
-                message: 'Hola, quiero comprar 1 producto demo',
-                items: [{ productId: 'prod-001', name: 'Producto Demo', quantity: 1 }],
-                total: 100,
+                customerPhone: '+5491112345678',
+                message: 'Hola! Quiero comprar 2 Remeras Talle M y 1 Jean Talle 38. ¿Tienen stock?',
+                items: [
+                    { productId: SEED_IDS.productTshirt, name: 'Remera Oversize', quantity: 2 },
+                    { productId: SEED_IDS.productJeans, name: 'Pantalón Jean Slim', quantity: 1 },
+                ],
+                total: 23500,
                 status: 'pending',
                 createdAt: new Date().toISOString(),
             },
