@@ -2,6 +2,9 @@ import { createBrowserRouter } from "react-router-dom";
 import Home from "./routes/web/Home";
 import ProductDetail from "./routes/web/ProductDetail";
 import SearchResults from "./routes/web/SearchResults";
+import TenantCatalog from "./routes/web/TenantCatalog";
+import TenantProductDetail from "./routes/web/TenantProductDetail";
+import Marketplace from "./routes/web/Marketplace";
 import { DashboardLayout } from '@/components/dashboard/layout/DashboardLayout';
 import { ProtectedRoute } from '@/components/dashboard/auth/ProtectedRoute';
 import LoginPage  from '@/features/auth/LoginPage';
@@ -14,10 +17,18 @@ import ReportsPage from '@/features/reports/ReportsPage';
 import ErrorPage from '@/components/dashboard/layout/ErrorPage';
 
 export const router = createBrowserRouter([
-  //Rutas de la Web publica e-comerce
-  { path: "/", element: <Home /> },
-  { path: "/product/:id", element: <ProductDetail /> },
-  { path: "/search", element: <SearchResults /> },
+  // Marketplace global (dominio raíz)
+  { path: "/", element: <Marketplace /> },
+
+  // Catálogo por tenant (subdominio o dominio custom)
+  { path: "/t/:tenantSlug", element: <TenantCatalog /> },
+  { path: "/t/:tenantSlug/product/:id", element: <TenantProductDetail /> },
+
+  // Legacy routes (mantener compatibilidad)
+  { path: "/legacy", element: <Home /> },
+  { path: "/legacy/product/:id", element: <ProductDetail /> },
+  { path: "/legacy/search", element: <SearchResults /> },
+
   //Dashboard and other routes can be added here in the future
   {
     path: '/login',

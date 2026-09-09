@@ -14,15 +14,15 @@ export async function POST(req: Request) {
     );
   }
 
-  const { tenantName, adminName, adminEmail, adminPassword } = parsed.data;
+  const { tenantName, slug, adminName, adminEmail, adminPassword } = parsed.data;
 
   const existingTenant = await prisma.tenant.findFirst({
-    where: { name: tenantName },
+    where: { OR: [{ name: tenantName }, { slug }] },
   });
 
   if (existingTenant) {
     return NextResponse.json(
-      { success: false, error: { code: 'TENANT_EXISTS', message: 'Tenant already exists' } },
+      { success: false, error: { code: 'TENANT_EXISTS', message: 'Tenant with this name or slug already exists' } },
       { status: 409 }
     );
   }
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
 
   const result = await prisma.$transaction(async (tx) => {
     const tenant = await tx.tenant.create({
-      data: { name: tenantName },
+      data: { name: tenantName, slug },
     });
 
     const admin = await tx.user.create({

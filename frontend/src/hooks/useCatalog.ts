@@ -1,20 +1,23 @@
 import { useQuery } from '@tanstack/react-query';
 import { getCatalogProducts, getCatalogProductById } from '@/services/catalog.api';
-
-const DEMO_TENANT_ID = import.meta.env.VITE_DEMO_TENANT_ID || '';
+import { useTenant } from './useTenant';
 
 export const useCatalogProducts = () => {
+  const { tenant, loading: tenantLoading } = useTenant();
+
   return useQuery({
-    queryKey: ['catalog-products'],
-    queryFn: () => getCatalogProducts(DEMO_TENANT_ID),
-    enabled: !!DEMO_TENANT_ID,
+    queryKey: ['catalog-products', tenant?.id],
+    queryFn: () => getCatalogProducts(tenant!.id),
+    enabled: !tenantLoading && !!tenant?.id,
   });
 };
 
 export const useCatalogProduct = (id: string) => {
+  const { tenant, loading: tenantLoading } = useTenant();
+
   return useQuery({
-    queryKey: ['catalog-product', id],
-    queryFn: () => getCatalogProductById(id, DEMO_TENANT_ID),
-    enabled: !!DEMO_TENANT_ID && !!id,
+    queryKey: ['catalog-product', id, tenant?.id],
+    queryFn: () => getCatalogProductById(id, tenant!.id),
+    enabled: !tenantLoading && !!tenant?.id && !!id,
   });
 };

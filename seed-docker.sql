@@ -17,9 +17,9 @@ TRUNCATE TABLE
 RESTART IDENTITY CASCADE;
 
 -- Tenant
-INSERT INTO "Tenant" (id, name) VALUES
-  ('0b95f160-f948-5ac3-921a-56029e130fa9', 'Demo Tenant'),
-  ('b63747fe-2573-5214-b490-32828299d672', 'Fashion Tenant');
+INSERT INTO "Tenant" (id, name, slug, domain, "logoUrl", "primaryColor", description, "whatsappNumber", active) VALUES
+  ('0b95f160-f948-5ac3-921a-56029e130fa9', 'Demo Tenant', 'demo', NULL, NULL, '#2563eb', 'Tienda de ropa casual y calzado', '5491112345678', true),
+  ('b63747fe-2573-5214-b490-32828299d672', 'Fashion Tenant', 'fashion', NULL, NULL, '#dc2626', 'Moda premium y accesorios', '5491165432100', true);
 
 -- Branches
 INSERT INTO "Branch" (id, name, type, address, hours, "tenantId") VALUES

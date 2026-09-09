@@ -1,22 +1,30 @@
 import { Trash2 } from "lucide-react";
 import { useCartStore } from "../../store/cart.store";
+import type { CartItem as CartItemType } from "../../store/cart.store";
 
-export const CartItem = ({ item }: { item: any }) => {
+export const CartItem = ({ item }: { item: CartItemType }) => {
   const remove = useCartStore(s => s.remove);
   const update = useCartStore(s => s.update);
 
   return (
     <div className="flex gap-3 py-3 border-b">
       <img
-        src={item.product.image}
+        src={item.product.imageUrl || "https://picsum.photos/100/100"}
         className="w-16 h-16 object-cover rounded"
       />
 
       <div className="flex-1 space-y-1">
         <p className="font-medium">{item.product.name}</p>
         <p className="text-sm text-gray-500">
-          ${item.product.price.toLocaleString()}
+          ${item.variant.price.toLocaleString()}
         </p>
+        {Object.keys(item.variant.attributes).length > 0 && (
+          <p className="text-xs text-gray-400">
+            {Object.entries(item.variant.attributes)
+              .map(([k, v]) => `${k}: ${v}`)
+              .join(", ")}
+          </p>
+        )}
 
         <div className="flex items-center gap-2">
           <button
@@ -43,7 +51,7 @@ export const CartItem = ({ item }: { item: any }) => {
         </button>
 
         <p className="font-semibold">
-          ${(item.product.price * item.quantity).toLocaleString()}
+          ${(item.variant.price * item.quantity).toLocaleString()}
         </p>
       </div>
     </div>
