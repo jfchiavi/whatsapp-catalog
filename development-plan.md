@@ -109,16 +109,16 @@ Gestionar existencias por sucursal y variante, con transferencias atómicas y pa
 
 ### Checks de implementación
 
-- [ ] Completar CRUD de sucursales con dirección, horarios y sucursal virtual.
-- [ ] Aplicar índice único `(tenantId, branchId, variantId)` en stock.
+- [x] Completar CRUD de sucursales con dirección, horarios y sucursal virtual.
+- [x] Aplicar índice único `(tenantId, branchId, variantId)` en stock.
 - [x] Existen endpoints iniciales `GET /api/stock/branch` y `GET /api/stock/history`.
-- [ ] Definir y completar el contrato final tenant-aware para sucursal e historial, preferentemente con parámetros explícitos y pruebas.
-- [ ] Ajustes y transferencias ejecutan transacciones PostgreSQL y registran `StockMovement` con usuario.
-- [ ] Rechazar cantidades negativas, variantes/sucursales de otro tenant y transferencias incompletas.
-- [ ] Actualizar `useStock` y vistas para filtrar por sucursal y variante.
-- [ ] Implementar permisos para admin, representante y vendedor según sucursal.
-- [ ] Agregar seeds reproducibles de tenant, sucursales, variantes y stock.
-- [ ] Agregar tests de concurrencia lógica, stock insuficiente y transferencia atómica.
+- [x] Definir y completar el contrato final tenant-aware para sucursal e historial, preferentemente con parámetros explícitos y pruebas.
+- [x] Ajustes y transferencias ejecutan transacciones PostgreSQL y registran `StockMovement` con usuario.
+- [x] Rechazar cantidades negativas, variantes/sucursales de otro tenant y transferencias incompletas.
+- [x] Actualizar `useStock` y vistas para filtrar por sucursal y variante.
+- [x] Implementar permisos para admin, representante y vendedor según sucursal.
+- [x] Agregar seeds reproducibles de tenant, sucursales, variantes y stock.
+- [x] Agregar tests de concurrencia lógica, stock insuficiente y transferencia atómica.
 
 ### Checks de validación manual
 
@@ -128,36 +128,246 @@ Gestionar existencias por sucursal y variante, con transferencias atómicas y pa
 - [ ] Intentar ajustar o vender más stock del disponible y confirmar rechazo sin cambios parciales.
 - [ ] Verificar que un representante solo ve la sucursal permitida y que el historial identifica al usuario.
 
+---
+
+## Prerrequisitos (antes de Slice 3)
+
+Issues críticos encontrados durante la auditoría que deben resolverse antes de continuar.
+
+### Checks de implementación
+
+- [x] Agregar rol `ADMIN` al enum `Role` de Prisma (tenant admin).
+- [x] Hacer `tenantId` nullable en `User` para que `SUPER_ADMIN` no tenga tenant.
+- [x] Agregar permisos faltantes al frontend: `whatsapp_orders`, `users`.
+- [x] Fix `rolePermissions.ts`: eliminar `ADMIN` duplicado de frontend, alinear con backend.
+- [x] Fix `UserRole` en `frontend/src/types/auth.ts`: alinear con Prisma `Role`.
+- [x] Conectar `tenantMiddleware` en todas las rutas autenticadas.
+- [x] Fix `GET /api/sales/:id`: agregar filtro `tenantId` (security gap).
+- [x] Fix `GET /api/tenants/:id/config`: validar ownership del tenant.
+- [x] Fix `GET /api/users`: usar permiso `users` en vez de `dashboard`.
+- [x] Fix `WhatsAppOrdersPage`: agregar ruta en `router.tsx` y entrada en sidebar.
+
+### Checks de validación manual
+
+- [ ] Login como SUPER_ADMIN: verificar que NO tiene tenantId en JWT.
+- [ ] Login como ADMIN: verificar que tiene permisos de `users` y `branches`.
+- [ ] Login como SELLER: verificar que solo ve `Ventas` en sidebar.
+- [ ] Verificar que `/users` funciona correctamente en el frontend.
+
+---
+
 ## Slice 3: Carrito, WhatsApp y cierre de venta
 
 ### Objetivo
 
-Completar la compra pública: carrito, selección de sucursal, derivación al representante y cierre trazable por WhatsApp.
+Completar la compra pública: carrito server-side, selección de sucursal, derivación al representante y cierre trazable por WhatsApp.
 
 ### Checks de implementación
 
-- [ ] Crear migraciones y modelos `Cart`, `CartItem`, `Order` y sus items con `tenantId`.
-- [ ] Implementar carrito por sesión con cantidades, precio snapshot, expiración y validación de variante activa.
-- [ ] Implementar selección de sucursal y recálculo de disponibilidad por variante.
-- [ ] Resolver el representante de la sucursal en servidor, con fallback explícito del tenant.
-- [ ] Generar mensaje determinista con cliente, sucursal, SKU, atributos, cantidades y total.
-- [ ] Generar enlace WhatsApp con teléfono validado y texto URL-encoded.
-- [ ] Crear pedido idempotente desde carrito y conservar snapshots para auditoría.
-- [x] Existe un panel y API inicial para `WhatsappOrder`, estados y conversión a venta.
-- [ ] Integrar el flujo nuevo de `Order` con permisos por sucursal, manteniendo compatibilidad durante la migración.
-- [ ] Definir transacción de cierre: validar stock nuevamente y descontarlo solo al estado comercial acordado.
-- [ ] Agregar tests de carrito, aislamiento, idempotencia, stock cambiado y formato del mensaje.
+#### Schema
+- [x] Crear migración `Cart`, `CartItem`, `Order`, `OrderItem` con `tenantId`.
+- [x] Agregar `customerId` a `Order` (opcional, para tracking de clientes).
+- [x] Agregar modelo `Customer` (name, phone, email, tenantId).
+
+#### Backend — Cart
+- [x] Crear servicio `cart.service.ts`: `getOrCreateCart`, `addToCart`, `updateCartItem`, `removeCartItem`, `setCartBranch`, `submitCart`.
+- [x] Validar stock server-side al agregar item al carrito.
+- [x] Snapshot de precio al momento de agregar (`unitPriceSnapshot`).
+- [x] Carrito expira después de 24 horas.
+- [x] Crear rutas: `POST /api/carts`, `GET /api/carts/:id`, `POST /api/carts/:id/items`, `PATCH /api/carts/:id/items/:itemId`, `DELETE /api/carts/:id/items/:itemId`, `PATCH /api/carts/:id/branch`.
+- [x] Validar Zod en todas las rutas del carrito.
+
+#### Backend — Orders
+- [x] Crear servicio `order.service.ts`: `getOrders`, `getOrderById`, `updateOrderStatus`, `confirmOrder`, `getRepresentative`.
+- [x] Generar mensaje WhatsApp determinista con cliente, sucursal, SKU, atributos, cantidades y total.
+- [x] Generar enlace `wa.me/` con teléfono validado y texto URL-encoded.
+- [x] Crear orden idempotente desde carrito con snapshots para auditoría.
+- [x] Transacción de cierre: validar stock nuevamente y descontarlo solo al confirmar.
+- [x] Crear rutas: `POST /api/orders` (público), `GET /api/orders` (auth), `GET /api/orders/:id`, `PATCH /api/orders/:id/status`, `POST /api/orders/:id/confirm`.
+- [x] Resolver representante de la sucursal en servidor (BRANCH_MANAGER activo, fallback al tenant).
+
+#### Backend — Compatibility
+- [x] Mantener compatibilidad con `WhatsappOrder` existente durante migración.
+- [x] Integrar flujo nuevo de `Order` con permisos por sucursal.
+
+#### Frontend — Cart API + Hooks
+- [x] Crear `services/cart.api.ts`: todas las llamadas API del carrito.
+- [x] Crear `hooks/useCart.ts`: queries y mutations del carrito.
+- [ ] Actualizar `store/cart.store.ts`: sincronizar con server-side cart.
+
+#### Frontend — Cart Components
+- [ ] Actualizar `CartDrawer.tsx`: selector de sucursal, validación server-side.
+- [ ] Actualizar `CartSummary.tsx`: disponibilidad por sucursal, "Comprar por WhatsApp" llama API primero.
+- [ ] Actualizar `CartItem.tsx`: mostrar disponibilidad, bloquear si no disponible en sucursal seleccionada.
+
+#### Frontend — Order Pages
+- [x] Crear `features/orders/OrdersPage.tsx`: lista de pedidos con badges de estado.
+- [ ] Crear `features/orders/OrderDetailPage.tsx`: detalle de pedido con items, acciones de estado.
+- [x] Agregar rutas: `/orders`.
+- [x] Agregar entrada en sidebar: "Pedidos" con permiso `sales`.
+
+#### Tests
+- [x] Cart CRUD: agregar, actualizar, eliminar items.
+- [x] Validación de stock: rechazar si insuficiente.
+- [x] Selección de sucursal: recalcular disponibilidad.
+- [x] Creación de orden: formato del mensaje WhatsApp, idempotencia.
+- [ ] Confirmación de orden: descuento de stock, creación de Sale.
+- [x] Cross-tenant: aislamiento de cart/order.
 
 ### Checks de validación manual
 
 - [ ] Agregar varias variantes al carrito y confirmar que cantidades y total se actualicen.
 - [ ] Cambiar de sucursal y verificar que disponibilidad y representante cambien correctamente.
 - [ ] Intentar agregar una variante sin stock y confirmar que la API y la UI lo bloquean.
-- [ ] Verificar que el botón "Comprar por WhatsApp" abre el chat del representante de la sucursal seleccionada.
+- [ ] Verificar que el botón "Comprar por WhatsApp" crea la orden y abre el chat del representante.
 - [ ] Confirmar que el mensaje incluye productos, variantes, cantidades, precios, subtotal y total formateados.
 - [ ] Crear el pedido dos veces por reintento y confirmar que no duplica la operación.
 - [ ] Confirmar que el representante puede gestionar solo pedidos de su sucursal y cambiar estados permitidos.
 - [ ] Cerrar una venta y verificar descuento de stock, movimiento auditado y pedido con snapshot.
+
+---
+
+## Slice 4: Panel SUPER_ADMIN — Gestión de Tenants y Usuarios
+
+### Objetivo
+
+Dar al SUPER_ADMIN (plataforma) control total sobre tenants, y al ADMIN (tenant) control sobre sus usuarios y sucursales.
+
+### Checks de implementación
+
+#### Schema
+- [ ] Agregar `ADMIN` al enum `Role` de Prisma.
+- [ ] Hacer `tenantId` nullable en `User`.
+- [ ] Agregar campo `active` a `User` (default true).
+
+#### Backend — Platform Admin (SUPER_ADMIN)
+- [ ] Crear servicio `platform.service.ts`: `getAllTenants`, `getTenantById`, `createTenant`, `updateTenant`, `deactivateTenant`, `getPlatformStats`.
+- [ ] Crear rutas: `GET /api/platform/tenants`, `GET /api/platform/tenants/:id`, `POST /api/platform/tenants`, `PUT /api/platform/tenants/:id`, `DELETE /api/platform/tenants/:id`, `GET /api/platform/stats`.
+- [ ] Todas las rutas platform requieren `SUPER_ADMIN` role.
+
+#### Backend — Tenant Admin (ADMIN)
+- [ ] Actualizar servicio `user.service.ts`: `getUsers`, `getUserById`, `createUser`, `updateUser`, `deactivateUser`, `resetPassword`.
+- [ ] Fix rutas `GET/POST /api/users`: usar permiso `users` en vez de `dashboard`.
+- [ ] Crear rutas: `GET /api/users/:id`, `PUT /api/users/:id`, `DELETE /api/users/:id`.
+
+#### Backend — Auth Changes
+- [ ] JWT: hacer `tenantId` opcional (null para SUPER_ADMIN).
+- [ ] `authMiddleware`: manejar null tenantId.
+- [ ] Login: SUPER_ADMIN login no requiere tenantId.
+
+#### Frontend — Tenant Management
+- [ ] Crear `features/platform/TenantsPage.tsx`: tabla de tenants con stats.
+- [ ] Crear `features/platform/CreateTenantModal.tsx`: formulario de creación.
+- [ ] Crear `features/platform/PlatformDashboard.tsx`: métricas de plataforma.
+- [ ] Agregar rutas: `/platform`, `/platform/tenants`.
+
+#### Frontend — User Management
+- [ ] Crear `features/users/UsersPage.tsx`: tabla de usuarios del tenant.
+- [ ] Crear `features/users/CreateUserModal.tsx`: formulario de creación.
+- [ ] Crear rutas: `/users`.
+
+#### Frontend — Navigation
+- [ ] Sidebar: agregar "Plataforma" y "Tenants" para SUPER_ADMIN.
+- [ ] Sidebar: agregar "Usuarios" para ADMIN.
+- [ ] Router: agregar todas las rutas nuevas.
+
+#### Tests
+- [ ] Platform: CRUD de tenants, desactivación, stats.
+- [ ] Users: CRUD, asignación de roles, desactivación.
+- [ ] Auth: login de SUPER_ADMIN sin tenantId, aislamiento de tenant.
+- [ ] Permisos: SUPER_ADMIN cross-tenant, ADMIN tenant-scoped.
+
+### Checks de validación manual
+
+- [ ] Login como SUPER_ADMIN: ver lista de todos los tenants con stats.
+- [ ] Crear nuevo tenant desde el panel de plataforma.
+- [ ] Login como ADMIN: ver solo usuarios de su tenant.
+- [ ] Crear usuario con rol BRANCH_MANAGER y asignarlo a una sucursal.
+- [ ] Desactivar usuario y confirmar que no puede hacer login.
+- [ ] Verificar que SELLER no ve "Usuarios" ni "Configuración" en sidebar.
+
+---
+
+## Slice 5: Dashboard Métricas, Notificaciones y Pulido
+
+### Objetivo
+
+Dashboard completo con métricas, alertas, import/export, descuentos, auditoría y pulido general.
+
+### Checks de implementación
+
+#### Schema
+- [ ] Crear modelo `AuditLog` (tenantId, userId, action, entity, entityId, changes JSONB, createdAt).
+- [ ] Crear modelo `Notification` (tenantId, userId, type, title, message, read, createdAt).
+- [ ] Crear modelo `Discount` (tenantId, name, type, value, variantId?, productId?, active, startDate, endDate).
+- [ ] Crear modelo `Customer` (tenantId, name, phone, email, notes).
+- [ ] Agregar `customerId` a `Order`.
+
+#### Backend — Audit Trail
+- [ ] Crear servicio `audit.service.ts`: `logAction`, `getAuditLogs` con paginación y filtros.
+- [ ] Crear middleware `auditMiddleware` que registre create/update/delete automáticamente.
+
+#### Backend — Notifications
+- [ ] Crear servicio `notifications.service.ts`: `checkLowStock`, `createNotification`, `getNotifications`, `markAsRead`, `markAllAsRead`.
+- [ ] Crear rutas: `GET /api/notifications`, `PATCH /api/notifications/:id/read`, `PATCH /api/notifications/read-all`.
+- [ ] Integrar `checkLowStock` como job periódico o trigger post-ajuste.
+
+#### Backend — Discounts
+- [ ] Crear servicio `discounts.service.ts`: `getDiscounts`, `createDiscount`, `updateDiscount`, `deleteDiscount`, `applyDiscounts`.
+- [ ] Crear rutas: `GET /api/discounts`, `POST /api/discounts`, `PUT /api/discounts/:id`, `DELETE /api/discounts/:id`.
+- [ ] Integrar descuentos en el flujo de cart/order.
+
+#### Backend — Customers
+- [ ] Crear servicio `customers.service.ts`: `getCustomers`, `getCustomerById`, `findOrCreateCustomer`, `getCustomerOrders`.
+- [ ] Crear rutas: `GET /api/customers`, `GET /api/customers/:id`, `GET /api/customers/:id/orders`.
+
+#### Backend — Import/Export
+- [ ] Crear servicio `import.service.ts`: `parseCSV`, `importProducts`, `importStock`, `exportProducts`, `exportSales`.
+- [ ] Crear rutas: `POST /api/import/products`, `POST /api/import/stock`, `GET /api/export/products`, `GET /api/export/sales`.
+
+#### Frontend — Dashboard
+- [ ] Reescribir `features/dashboard/DashboardPage.tsx`: tarjetas de resumen, gráficos de ventas, top productos, comparación de sucursales, pedidos recientes, alertas de stock bajo.
+
+#### Frontend — Notifications
+- [ ] Crear `components/notifications/NotificationBell.tsx`: ícono con badge de no leídas, dropdown.
+- [ ] Crear `features/notifications/NotificationsPage.tsx`: lista completa con filtros.
+
+#### Frontend — Discounts
+- [ ] Crear `features/discounts/DiscountsPage.tsx`: tabla de reglas de descuento.
+- [ ] Crear `features/discounts/CreateDiscountModal.tsx`: formulario.
+
+#### Frontend — Customers
+- [ ] Crear `features/customers/CustomersPage.tsx`: tabla con historial.
+- [ ] Crear `features/customers/CustomerDetailPage.tsx`: detalle con pedidos.
+
+#### Frontend — Import/Export
+- [ ] Crear `features/import/ImportPage.tsx`: upload de CSV, preview, confirmación.
+- [ ] Agregar botones "Exportar CSV" en páginas de productos y ventas.
+
+#### Frontend — Navigation
+- [ ] Sidebar: agregar "Descuentos", "Clientes", "Importar/Exportar".
+- [ ] Router: agregar todas las rutas nuevas.
+
+#### Tests
+- [ ] Audit: creación de logs, filtrado, paginación.
+- [ ] Notifications: detección de stock bajo, read/unread, bulk mark.
+- [ ] Discounts: CRUD, percentage/fixed, rango de fechas, scope product/variant.
+- [ ] Customers: creación, upsert, historial de pedidos.
+- [ ] Import: parsing de CSV, creación bulk de productos, ajuste de stock.
+- [ ] Export: generación de CSV, precisión de datos.
+
+### Checks de validación manual
+
+- [ ] Dashboard: ver métricas de ventas de los últimos 7/30 días.
+- [ ] Dashboard: ver top productos y comparación de sucursales.
+- [ ] Recibir notificación cuando stock cae bajo el mínimo.
+- [ ] Crear descuento de 10% y verificar que se aplica en el carrito.
+- [ ] Buscar cliente por teléfono y ver su historial de pedidos.
+- [ ] Importar productos desde CSV y verificar que se crean correctamente.
+- [ ] Exportar ventas a CSV y abrir en Excel/Google Sheets.
+- [ ] Verificar audit trail: cada operación CRUD queda registrada.
+
+---
 
 ## Progreso
 
@@ -166,9 +376,12 @@ Actualizar esta sección después de cada sesión de trabajo. `[x]` requiere evi
 - [ ] Slice 0 completo
 - [ ] Slice 1 completo (implementación completa, validación manual pendiente)
 - [ ] Slice 1.1 completo (implementación completa, validación manual pendiente)
-- [ ] Slice 2 completo
-- [ ] Slice 3 completo
-- [ ] Próximo slice activo: Slice 1.1 (validación manual pendiente)
-- [x] Última actualización: Slice 1.1 implementación completada
+- [x] Slice 2 completo (implementación completa, validación manual pendiente)
+- [x] Prerrequisitos completos (implementación completa, validación manual pendiente)
+- [ ] Slice 3 completo (implementación ~80%, validación manual pendiente)
+- [ ] Slice 4 completo
+- [ ] Slice 5 completo
+- [ ] Próximo slice activo: Slice 3 (completar frontend cart components + order detail)
+- [x] Última actualización: Slice 3 implementación parcial completada (prerequisitos + backend + frontend API/hooks + OrdersPage)
 
-Cuando el usuario solicite **“Actualizar progreso”**, comparar este checklist con el código actual y con la evidencia proporcionada. Cuando solicite **“Continuar con el Slice #”**, trabajar únicamente en ese slice, mantener los contratos anteriores y actualizar esta sección al terminar.
+Cuando el usuario solicite **"Actualizar progreso"**, comparar este checklist con el código actual y con la evidencia proporcionada. Cuando solicite **"Continuar con el Slice #"**, trabajar únicamente en ese slice, mantener los contratos anteriores y actualizar esta sección al terminar.

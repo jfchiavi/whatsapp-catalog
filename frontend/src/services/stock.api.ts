@@ -1,38 +1,61 @@
 import { api } from './api';
 import type { StockByBranch, StockMovement } from '@/types/stock';
-import { SEED_IDS } from '@/mocks/data';
 
+export const fetchStockByBranch = async (branchId: string): Promise<StockByBranch[]> => {
+  const { data } = await api.get(`/stock/branch/${branchId}`);
+  return data;
+};
 
-// TODO: reemplazar por backend real
 export const fetchStockByProduct = async (productId: string): Promise<StockByBranch[]> => {
-    if (import.meta.env.VITE_USE_MOCKS === 'true') {
-        return [
-            { branchId: SEED_IDS.branchCentral, quantity: 25, minQuantity: 5 },
-            { branchId: SEED_IDS.branchWeb, quantity: 100, minQuantity: 20 },
-        ];
-    }
-    const { data } = await api.get(`/stock/product/${productId}`);
-    return data;
+  const { data } = await api.get(`/stock/product/${productId}`);
+  return data;
 };
 
-
-export const transferStock = async (payload: {
-    productId: string;
-    fromBranchId: string;
-    toBranchId: string;
-    quantity: number;
+export const adjustStock = async (payload: {
+  variantId: string;
+  branchId: string;
+  quantity: number;
 }) => {
-    if (import.meta.env.VITE_USE_MOCKS === 'true') {
-        return { success: true };
-    }
-    return api.post('/stock/transfer', payload);
+  const { data } = await api.post('/stock/adjust', payload);
+  return data;
 };
 
+export const createTransfer = async (payload: {
+  variantId: string;
+  fromBranchId: string;
+  toBranchId: string;
+  quantity: number;
+}) => {
+  const { data } = await api.post('/stock/transfer', payload);
+  return data;
+};
 
-export const fetchStockHistory = async (productId: string): Promise<StockMovement[]> => {
-    if (import.meta.env.VITE_USE_MOCKS === 'true') {
-        return [];
-    }
-    const { data } = await api.get(`/stock/history/${productId}`);
-    return data;
+export const receiveTransfer = async (
+  movementId: string,
+  receivedQuantity: number
+): Promise<StockMovement> => {
+  const { data } = await api.patch(`/stock/transfer/${movementId}/receive`, {
+    receivedQuantity,
+  });
+  return data;
+};
+
+export const cancelTransfer = async (movementId: string): Promise<StockMovement> => {
+  const { data } = await api.patch(`/stock/transfer/${movementId}/cancel`);
+  return data;
+};
+
+export const fetchPendingTransfers = async (branchId?: string): Promise<StockMovement[]> => {
+  const params = branchId ? `?branchId=${branchId}` : '';
+  const { data } = await api.get(`/stock/transfers/pending${params}`);
+  return data;
+};
+
+export const fetchStockHistory = async (
+  variantId: string,
+  branchId?: string
+): Promise<StockMovement[]> => {
+  const params = branchId ? `?branchId=${branchId}` : '';
+  const { data } = await api.get(`/stock/history/${variantId}${params}`);
+  return data;
 };

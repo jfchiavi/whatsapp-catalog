@@ -50,20 +50,22 @@ export async function POST(req: Request) {
   const accessToken = generateAccessToken({
     userId: user.id,
     role: user.role,
-    tenantId: user.tenantId,
+    tenantId: user.tenantId ?? '',
     branchId: user.branchId,
   });
 
   const refreshToken = generateRefreshToken({ userId: user.id });
 
-  await prisma.refreshToken.create({
-    data: {
-      token: refreshToken,
-      userId: user.id,
-      tenantId: user.tenantId,
-      expiresAt: new Date(Date.now() + 7 * 86400000),
-    },
-  });
+  if (user.tenantId) {
+    await prisma.refreshToken.create({
+      data: {
+        token: refreshToken,
+        userId: user.id,
+        tenantId: user.tenantId,
+        expiresAt: new Date(Date.now() + 7 * 86400000),
+      },
+    });
+  }
 
   const userResponse = generateUserResponse(user);
 

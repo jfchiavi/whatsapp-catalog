@@ -18,6 +18,13 @@ export async function GET(
   try {
     const { id } = await params;
 
+    if (auth.role !== 'SUPER_ADMIN' && auth.tenantId !== id) {
+      return NextResponse.json(
+        { success: false, error: { code: 'FORBIDDEN', message: 'Cannot access other tenant config' } },
+        { status: 403 }
+      );
+    }
+
     const tenant = await prisma.tenant.findUnique({
       where: { id },
       select: {
@@ -58,6 +65,14 @@ export async function PUT(
 
   try {
     const { id } = await params;
+
+    if (auth.role !== 'SUPER_ADMIN' && auth.tenantId !== id) {
+      return NextResponse.json(
+        { success: false, error: { code: 'FORBIDDEN', message: 'Cannot modify other tenant config' } },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
     const parsed = updateTenantConfigSchema.safeParse(body);
 

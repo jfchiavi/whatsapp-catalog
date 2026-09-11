@@ -14,28 +14,35 @@ export async function GET(
   const perm = permissionMiddleware(auth.role, 'sales');
   if (perm) return perm;
 
-  const { id } = await params;
   try {
-      const sale = await prisma.sale.findUnique({
-        where: { id: id },
-        include: {
-          items: {
-            include: {
-              variant: {
-                include: {
-                  product: true,
-                },
+    const { id } = await params;
+
+    const sale = await prisma.sale.findFirst({
+      where: { id, tenantId: auth.tenantId! },
+      include: {
+        items: {
+          include: {
+            variant: {
+              include: {
+                product: true,
               },
             },
           },
-          branch: true,
-          user: true,
         },
-      });
+        branch: true,
+        user: true,
+      },
+    });
+
+    if (!sale) {
+      return NextResponse.json(
+        { success: false, error: { code: 'NOT_FOUND', message: 'Sale not found' } },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({ success: true, data: sale });
   } catch (error) {
     return handleError(error);
   }
-
 }

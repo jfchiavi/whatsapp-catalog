@@ -1,4 +1,5 @@
 import { api } from './api';
+import type { UserRole } from '@/types/auth';
 
 export interface LoginResponse {
   accessToken: string;
@@ -7,12 +8,12 @@ export interface LoginResponse {
     id: string;
     name: string;
     email: string;
-    role: string;
+    role: UserRole;
     branchId: string | null;
     tenantId: string | null;
   };
 }
-//conectar LoginPage → backend real, auth profesional con JWT + React Query.
+
 export const loginRequest = async (payload: {
   email: string;
   password: string;

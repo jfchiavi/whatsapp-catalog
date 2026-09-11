@@ -1,11 +1,9 @@
 import { prisma } from '@/lib/prisma';
+import { AppError } from '@/lib/errors';
 
 export const getStockByVariant = async (variantId: string, tenantId: string) => {
   return prisma.stock.findMany({
-    where: {
-      variantId,
-      tenantId,
-    },
+    where: { variantId, tenantId },
     include: { branch: true },
   });
 };
@@ -13,34 +11,25 @@ export const getStockByVariant = async (variantId: string, tenantId: string) => 
 export const getStockByProduct = async (productId: string, tenantId: string) => {
   return prisma.stock.findMany({
     where: {
-      variant: {
-        productId,
-        tenantId,
-      },
+      variant: { productId, tenantId },
     },
     include: {
       branch: true,
-      variant: {
-        include: {
-          product: true,
-        },
-      },
+      variant: { include: { product: true } },
     },
   });
 };
 
 export const getStockByBranch = async (branchId: string, tenantId: string) => {
   return prisma.stock.findMany({
-    where: {
-      branchId,
-      tenantId,
-    },
+    where: { branchId, tenantId },
     include: {
       variant: {
-        include: {
-          product: true,
-        },
+        include: { product: true },
       },
+    },
+    orderBy: {
+      variant: { product: { name: 'asc' } },
     },
   });
 };
@@ -49,70 +38,34 @@ export const adjustStock = async (
   variantId: string,
   branchId: string,
   quantity: number,
-  userId: string | null = null
+  tenantId: string,
+  userId?: string
 ) => {
-  // Get user info for tenantId if userId is provided
-  let tenantId = '';
-  if (userId) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { tenantId: true },
-    });
-    if (!user) {
-      throw new Error('User not found');
-    }
-    tenantId = user.tenantId;
-  } else {
-    // If no userId, we'll need to get tenantId from the variant/branch
-    // For now, we'll get it from the stock record if it exists, or from variant/branch
-    const existingStock = await prisma.stock.findFirst({
-      where: { variantId, branchId },
-      select: { tenantId: true },
-    });
-    
-    if (existingStock) {
-      tenantId = existingStock.tenantId;
-    } else {
-      // Get tenantId from variant or branch
-      const variant = await prisma.variant.findUnique({
-        where: { id: variantId },
-        select: { tenantId: true },
-      });
-      const branch = await prisma.branch.findUnique({
-        where: { id: branchId },
-        select: { tenantId: true },
-      });
-      
-      if (!variant || !branch) {
-        throw new Error('Variant or branch not found');
-      }
-      
-      if (variant.tenantId !== branch.tenantId) {
-        throw new Error('Variant and branch belong to different tenants');
-      }
-      
-      tenantId = variant.tenantId;
-    }
+  const variant = await prisma.variant.findFirst({
+    where: { id: variantId, tenantId },
+  });
+  if (!variant) {
+    throw new AppError('Variant not found', 404, 'NOT_FOUND');
+  }
+
+  const branch = await prisma.branch.findFirst({
+    where: { id: branchId, tenantId, active: true },
+  });
+  if (!branch) {
+    throw new AppError('Branch not found', 404, 'NOT_FOUND');
   }
 
   return prisma.$transaction(async (tx) => {
-      const stock = await tx.stock.upsert({
+    const stock = await tx.stock.upsert({
       where: {
         tenantId_variantId_branchId: { tenantId, variantId, branchId },
       },
-      update: {
-        quantity: { increment: quantity },
-      },
-      create: {
-        variantId,
-        branchId,
-        quantity,
-        tenantId,
-      },
+      update: { quantity: { increment: quantity } },
+      create: { variantId, branchId, quantity, tenantId },
     });
 
     if (stock.quantity < 0) {
-      throw new Error('Stock cannot be negative');
+      throw new AppError('Insufficient stock', 400, 'INSUFFICIENT_STOCK');
     }
 
     await tx.stockMovement.create({
@@ -122,6 +75,7 @@ export const adjustStock = async (
         toBranchId: branchId,
         quantity,
         type: 'ADJUST',
+        status: 'COMPLETED',
         userId,
         tenantId,
       },
@@ -136,46 +90,32 @@ export const transferStock = async (
   fromBranchId: string,
   toBranchId: string,
   quantity: number,
-  userId: string | null = null
+  tenantId: string,
+  userId?: string
 ) => {
-  // Get user info for tenantId if userId is provided
-  let tenantId = '';
-  if (userId) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { tenantId: true },
-    });
-    if (!user) {
-      throw new Error('User not found');
-    }
-    tenantId = user.tenantId;
-  } else {
-    // If no userId, we'll need to get tenantId from the variant/branches
-    const variant = await prisma.variant.findUnique({
-      where: { id: variantId },
-      select: { tenantId: true },
-    });
-    const fromBranch = await prisma.branch.findUnique({
-      where: { id: fromBranchId },
-      select: { tenantId: true },
-    });
-    const toBranch = await prisma.branch.findUnique({
-      where: { id: toBranchId },
-      select: { tenantId: true },
-    });
-    
-    if (!variant || !fromBranch || !toBranch) {
-      throw new Error('Variant or branch not found');
-    }
-    
-    // Validate all belong to same tenant
-    if (variant.tenantId !== fromBranch.tenantId || 
-        variant.tenantId !== toBranch.tenantId ||
-        fromBranch.tenantId !== toBranch.tenantId) {
-      throw new Error('Variant and branches belong to different tenants');
-    }
-    
-    tenantId = variant.tenantId;
+  if (fromBranchId === toBranchId) {
+    throw new AppError('Cannot transfer to the same branch', 400, 'SAME_BRANCH');
+  }
+
+  const variant = await prisma.variant.findFirst({
+    where: { id: variantId, tenantId },
+  });
+  if (!variant) {
+    throw new AppError('Variant not found', 404, 'NOT_FOUND');
+  }
+
+  const fromBranch = await prisma.branch.findFirst({
+    where: { id: fromBranchId, tenantId, active: true },
+  });
+  if (!fromBranch) {
+    throw new AppError('Source branch not found', 404, 'NOT_FOUND');
+  }
+
+  const toBranch = await prisma.branch.findFirst({
+    where: { id: toBranchId, tenantId, active: true },
+  });
+  if (!toBranch) {
+    throw new AppError('Destination branch not found', 404, 'NOT_FOUND');
   }
 
   return prisma.$transaction(async (tx) => {
@@ -186,7 +126,7 @@ export const transferStock = async (
     });
 
     if (!fromStock || fromStock.quantity < quantity) {
-      throw new Error('Insufficient stock');
+      throw new AppError('Insufficient stock', 400, 'INSUFFICIENT_STOCK');
     }
 
     await tx.stock.update({
@@ -196,29 +136,173 @@ export const transferStock = async (
       data: { quantity: { decrement: quantity } },
     });
 
-    await tx.stock.upsert({
-      where: {
-        tenantId_variantId_branchId: { tenantId, variantId, branchId: toBranchId },
-      },
-      update: { quantity: { increment: quantity } },
-      create: {
-        variantId,
-        branchId: toBranchId,
-        quantity,
-        tenantId,
-      },
-    });
-
-    await tx.stockMovement.create({
+    const movement = await tx.stockMovement.create({
       data: {
         variantId,
         fromBranchId,
         toBranchId,
         quantity,
         type: 'TRANSFER',
+        status: 'PENDING',
         userId,
         tenantId,
       },
     });
+
+    return movement;
+  });
+};
+
+export const receiveTransfer = async (
+  movementId: string,
+  receivedQuantity: number,
+  tenantId: string,
+  userId?: string
+) => {
+  const movement = await prisma.stockMovement.findFirst({
+    where: {
+      id: movementId,
+      tenantId,
+      type: 'TRANSFER',
+      status: 'PENDING',
+    },
+  });
+
+  if (!movement) {
+    throw new AppError('Transfer not found or already processed', 404, 'NOT_FOUND');
+  }
+
+  if (receivedQuantity < 0) {
+    throw new AppError('Received quantity cannot be negative', 400, 'INVALID_QUANTITY');
+  }
+
+  if (receivedQuantity > movement.quantity) {
+    throw new AppError('Received quantity exceeds transferred quantity', 400, 'QUANTITY_EXCEEDED');
+  }
+
+  const toBranchId = movement.toBranchId!;
+
+  return prisma.$transaction(async (tx) => {
+    await tx.stock.upsert({
+      where: {
+        tenantId_variantId_branchId: {
+          tenantId,
+          variantId: movement.variantId,
+          branchId: toBranchId,
+        },
+      },
+      update: { quantity: { increment: receivedQuantity } },
+      create: {
+        variantId: movement.variantId,
+        branchId: toBranchId,
+        quantity: receivedQuantity,
+        tenantId,
+      },
+    });
+
+    const updated = await tx.stockMovement.update({
+      where: { id: movementId },
+      data: {
+        status: 'COMPLETED',
+        receivedQuantity,
+      },
+    });
+
+    return updated;
+  });
+};
+
+export const cancelTransfer = async (
+  movementId: string,
+  tenantId: string
+) => {
+  const movement = await prisma.stockMovement.findFirst({
+    where: {
+      id: movementId,
+      tenantId,
+      type: 'TRANSFER',
+      status: 'PENDING',
+    },
+  });
+
+  if (!movement) {
+    throw new AppError('Transfer not found or already processed', 404, 'NOT_FOUND');
+  }
+
+  const fromBranchId = movement.fromBranchId!;
+
+  return prisma.$transaction(async (tx) => {
+    await tx.stock.update({
+      where: {
+        tenantId_variantId_branchId: {
+          tenantId,
+          variantId: movement.variantId,
+          branchId: fromBranchId,
+        },
+      },
+      data: { quantity: { increment: movement.quantity } },
+    });
+
+    const updated = await tx.stockMovement.update({
+      where: { id: movementId },
+      data: { status: 'CANCELLED' },
+    });
+
+    return updated;
+  });
+};
+
+export const getPendingTransfers = async (tenantId: string, branchId?: string) => {
+  const where: Record<string, unknown> = {
+    tenantId,
+    type: 'TRANSFER',
+    status: 'PENDING',
+  };
+
+  if (branchId) {
+    where.OR = [{ fromBranchId: branchId }, { toBranchId: branchId }];
+  }
+
+  return prisma.stockMovement.findMany({
+    where,
+    include: {
+      variant: { include: { product: true } },
+      fromBranch: true,
+      toBranch: true,
+      user: { select: { id: true, name: true, email: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+};
+
+export const getStockHistory = async (
+  variantId: string,
+  tenantId: string,
+  branchId?: string
+) => {
+  const where: Record<string, unknown> = {
+    variantId,
+    tenantId,
+  };
+
+  if (branchId) {
+    where.OR = [{ fromBranchId: branchId }, { toBranchId: branchId }];
+  }
+
+  return prisma.stockMovement.findMany({
+    where,
+    include: {
+      fromBranch: { select: { id: true, name: true } },
+      toBranch: { select: { id: true, name: true } },
+      user: { select: { id: true, name: true } },
+      variant: {
+        select: {
+          id: true,
+          sku: true,
+          product: { select: { name: true } },
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
   });
 };

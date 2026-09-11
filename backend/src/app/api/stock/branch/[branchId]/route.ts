@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authMiddleware } from '@/middlewares/auth.middleware';
 import { permissionMiddleware } from '@/middlewares/permission.middleware';
-import { prisma } from '@/lib/prisma';
+import { getStockByBranch } from '@/modules/stock/stock.service';
+import { handleError } from '@/lib/errors';
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ branchId: string }> }) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ branchId: string }> }
+) {
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
 
@@ -13,79 +17,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ bran
   try {
     const { branchId } = await params;
 
-    // Validate that branch exists and user has access
-    const branch = await prisma.branch.findUnique({
-      where: { id: branchId },
-      include: {
-        tenant: true,
-      },
-    });
-
-    if (!branch) {
-      return NextResponse.json(
-        { message: 'Branch not found' },
-        { status: 404 }
-      );
-    }
-
-    // Check if user has access to this branch
     if (auth.role !== 'SUPER_ADMIN' && auth.branchId !== branchId) {
       return NextResponse.json(
-        { message: 'Unauthorized access to branch' },
+        { success: false, error: { code: 'FORBIDDEN', message: 'Unauthorized access to branch' } },
         { status: 403 }
       );
     }
 
-    // Get stock for this branch with variant and product details
-    const stockItems = await prisma.stock.findMany({
-      where: {
-        branchId,
-        tenantId: auth.tenantId,
-      },
-      include: {
-        variant: {
-          include: {
-            product: true,
-          },
-        },
-      },
-      orderBy: {
-        variant: {
-          product: {
-            name: 'asc',
-          },
-        },
-      },
-    });
-
-    // Format response
-    const formattedStock = stockItems.map(item => ({
-      id: item.id,
-      variantId: item.variantId,
-      variant: {
-        id: item.variant.id,
-        sku: item.variant.sku,
-        price: item.variant.price,
-        cost: item.variant.cost,
-        attributes: item.variant.attributes,
-      },
-      product: {
-        id: item.variant.product.id,
-        name: item.variant.product.name,
-        imageUrl: item.variant.product.imageUrl,
-        batch: item.variant.product.batch,
-        expirationDate: item.variant.product.expirationDate,
-        baseAttributes: item.variant.product.baseAttributes,
-        active: item.variant.product.active,
-      },
-      quantity: item.quantity,
-    }));
-
-    return NextResponse.json({ success: true, data: formattedStock });
-  } catch (error: any) {
-    return NextResponse.json(
-      { message: error.message },
-      { status: 500 }
-    );
+    const stock = await getStockByBranch(branchId, auth.tenantId);
+    return NextResponse.json({ success: true, data: stock });
+  } catch (error) {
+    return handleError(error);
   }
 }

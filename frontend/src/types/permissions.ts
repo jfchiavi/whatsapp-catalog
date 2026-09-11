@@ -5,4 +5,5 @@ export type Permission =
   | 'sales'
   | 'reports'
   | 'users'
-  | 'tenants';
+  | 'tenants'
+  | 'whatsapp_orders';

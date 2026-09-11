@@ -6,6 +6,8 @@ import {
   CirclePile,
   Users,
   Settings,
+  MessageSquare,
+  ClipboardList,
 } from 'lucide-react';
 import type { Permission } from '@/types/permissions';
 
@@ -39,6 +41,18 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     label: 'Ventas',
     path: '/sales',
     icon: ShoppingCart,
+    permission: 'sales',
+  },
+  {
+    label: 'Pedidos WhatsApp',
+    path: '/whatsapp-orders',
+    icon: MessageSquare,
+    permission: 'whatsapp_orders',
+  },
+  {
+    label: 'Pedidos',
+    path: '/orders',
+    icon: ClipboardList,
     permission: 'sales',
   },
   {

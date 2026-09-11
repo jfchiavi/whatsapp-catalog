@@ -9,6 +9,7 @@ export const rolePermissions: Record<string, Permission[]> = {
     'reports',
     'users',
     'tenants',
+    'whatsapp_orders',
   ],
   ADMIN: [
     'dashboard',
@@ -16,11 +17,19 @@ export const rolePermissions: Record<string, Permission[]> = {
     'stock',
     'sales',
     'reports',
+    'users',
+    'whatsapp_orders',
   ],
   BRANCH_MANAGER: [
-    'dashboard', 
-    'sales', 
-    'reports'
-],
-  SELLER: ['sales'],
+    'dashboard',
+    'products',
+    'stock',
+    'sales',
+    'reports',
+  ],
+  SELLER: [
+    'dashboard',
+    'sales',
+    'whatsapp_orders',
+  ],
 };

@@ -3,6 +3,7 @@ import { authMiddleware } from '@/middlewares/auth.middleware';
 import { permissionMiddleware } from '@/middlewares/permission.middleware';
 import { adjustStockSchema } from '@/validators/stock.schema';
 import { adjustStock } from '@/modules/stock/stock.service';
+import { handleError } from '@/lib/errors';
 
 export async function POST(req: NextRequest) {
   const auth = authMiddleware(req);
@@ -15,7 +16,17 @@ export async function POST(req: NextRequest) {
   const parsed = adjustStockSchema.safeParse(body);
 
   if (!parsed.success) {
-    return NextResponse.json(parsed.error, { status: 400 });
+    return NextResponse.json(
+      { success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid input', details: parsed.error.flatten() } },
+      { status: 400 }
+    );
+  }
+
+  if (auth.role === 'BRANCH_MANAGER' && parsed.data.branchId !== auth.branchId) {
+    return NextResponse.json(
+      { success: false, error: { code: 'FORBIDDEN', message: 'Branch managers can only adjust stock for their own branch' } },
+      { status: 403 }
+    );
   }
 
   try {
@@ -23,13 +34,11 @@ export async function POST(req: NextRequest) {
       parsed.data.variantId,
       parsed.data.branchId,
       parsed.data.quantity,
+      auth.tenantId,
       auth.userId
     );
     return NextResponse.json({ success: true, data: stock });
-  } catch (error: any) {
-    return NextResponse.json(
-      { message: error.message },
-      { status: 400 }
-    );
+  } catch (error) {
+    return handleError(error);
   }
 }

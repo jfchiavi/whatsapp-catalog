@@ -16,6 +16,7 @@ generator client {
 
 enum Role {
   SUPER_ADMIN
+  ADMIN
   BRANCH_MANAGER
   SELLER
 }
@@ -41,6 +42,11 @@ model Tenant {
   saleItems      SaleItem[]
   whatsappOrders WhatsappOrder[]
   refreshTokens  RefreshToken[]
+  customers      Customer[]
+  carts          Cart[]
+  cartItems      CartItem[]
+  orders         Order[]
+  orderItems     OrderItem[]
 }
 
 model User {
@@ -51,8 +57,9 @@ model User {
   role      Role
   branchId  String?
   branch    Branch?  @relation(fields: [branchId], references: [id])
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  tenantId  String?
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
+  active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -80,6 +87,7 @@ model Branch {
   type      String // physical | virtual
   address   String?
   hours     String?
+  active    Boolean  @default(true)
   createdAt DateTime @default(now())
   tenantId  String
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
@@ -89,6 +97,8 @@ model Branch {
   sales Sale[]
   stockMovementsFrom StockMovement[] @relation("StockMovementFromBranch")
   stockMovementsTo   StockMovement[] @relation("StockMovementToBranch")
+  carts Cart[]
+  orders Order[]
 }
 
 model Product {
@@ -122,6 +132,9 @@ model Variant {
 
   stock     Stock[]
   saleItems SaleItem[]
+  stockMovements StockMovement[]
+  cartItems CartItem[]
+  orderItems OrderItem[]
 
   @@unique([tenantId, sku])
 }
@@ -140,19 +153,22 @@ model Stock {
 }
 
 model StockMovement {
-  id           String   @id @default(uuid())
-  variantId    String
-  fromBranchId String?
-  toBranchId   String?
-  quantity     Int
-  type         String // ADJUST | TRANSFER | SALE
-  userId       String?
-  user         User?    @relation(fields: [userId], references: [id])
-  tenantId     String
-  tenant       Tenant   @relation(fields: [tenantId], references: [id])
-  fromBranch   Branch?  @relation("StockMovementFromBranch", fields: [fromBranchId], references: [id])
-  toBranch     Branch?  @relation("StockMovementToBranch", fields: [toBranchId], references: [id])
-  createdAt    DateTime @default(now())
+  id               String   @id @default(uuid())
+  variantId        String
+  variant          Variant  @relation(fields: [variantId], references: [id])
+  fromBranchId     String?
+  toBranchId       String?
+  quantity         Int
+  receivedQuantity Int?
+  type             String // ADJUST | TRANSFER | SALE
+  status           String   @default("COMPLETED") // PENDING | COMPLETED | CANCELLED
+  userId           String?
+  user             User?    @relation(fields: [userId], references: [id])
+  tenantId         String
+  tenant           Tenant   @relation(fields: [tenantId], references: [id])
+  fromBranch       Branch?  @relation("StockMovementFromBranch", fields: [fromBranchId], references: [id])
+  toBranch         Branch?  @relation("StockMovementToBranch", fields: [toBranchId], references: [id])
+  createdAt        DateTime @default(now())
 }
 
 model Sale {
@@ -192,4 +208,88 @@ model WhatsappOrder {
   tenantId      String
   tenant        Tenant   @relation(fields: [tenantId], references: [id])
   createdAt     DateTime @default(now())
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  name      String
+  phone     String
+  email     String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[]
+
+  @@unique([tenantId, phone])
+}
+
+model Cart {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  sessionId String
+  branchId  String?
+  branch    Branch?  @relation(fields: [branchId], references: [id])
+  status    String   @default("active") // active | submitted | abandoned
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  items     CartItem[]
+
+  @@unique([tenantId, sessionId])
+}
+
+model CartItem {
+  id                String  @id @default(uuid())
+  cartId            String
+  cart              Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  variantId         String
+  variant           Variant @relation(fields: [variantId], references: [id])
+  quantity          Int
+  unitPriceSnapshot Float
+  tenantId          String
+  tenant            Tenant  @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, cartId, variantId])
+}
+
+model Order {
+  id               String   @id @default(uuid())
+  tenantId         String
+  tenant           Tenant   @relation(fields: [tenantId], references: [id])
+  cartId           String?
+  branchId         String
+  branch           Branch   @relation(fields: [branchId], references: [id])
+  customerId       String?
+  customer         Customer? @relation(fields: [customerId], references: [id])
+  representativeId String?
+  customerName     String
+  customerPhone    String
+  customerNotes    String?
+  status           String   @default("pending") // pending | contacted | confirmed | completed | cancelled
+  totalSnapshot    Float
+  whatsappMessage  String
+  whatsappUrl      String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  items            OrderItem[]
+}
+
+model OrderItem {
+  id                 String  @id @default(uuid())
+  orderId            String
+  order              Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variantId          String
+  variant            Variant @relation(fields: [variantId], references: [id])
+  quantity           Int
+  unitPriceSnapshot  Float
+  skuSnapshot        String
+  attributesSnapshot Json
+  tenantId           String
+  tenant             Tenant  @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, orderId, variantId])
 }

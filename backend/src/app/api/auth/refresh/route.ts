@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     const newAccessToken = generateAccessToken({
       userId: user.id,
       role: user.role,
-      tenantId: user.tenantId,
+      tenantId: user.tenantId ?? '',
       branchId: user.branchId,
     });
 
