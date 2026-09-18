@@ -52,18 +52,28 @@ describe('Variant service', () => {
   });
 
   it('allows same SKU in different tenant', async () => {
+    // Create a product in a different tenant first
+    const otherTenant = await prisma.tenant.create({
+      data: { name: 'Other Tenant Sku', slug: 'other-tenant-sku-' + Date.now() },
+    });
+    const otherProduct = await prisma.product.create({
+      data: { name: 'Other Product', active: true, tenantId: otherTenant.id },
+    });
+
     const variant = await createVariant({
-      productId: TEST_PRODUCT_ID,
+      productId: otherProduct.id,
       sku: 'TEST-VAR-001',
       price: 75,
       cost: 30,
-      tenantId: 'other-tenant',
+      tenantId: otherTenant.id,
     });
 
     expect(variant.sku).toBe('TEST-VAR-001');
-    expect(variant.tenantId).toBe('other-tenant');
+    expect(variant.tenantId).toBe(otherTenant.id);
 
     await prisma.variant.delete({ where: { id: variant.id } });
+    await prisma.product.delete({ where: { id: otherProduct.id } });
+    await prisma.tenant.delete({ where: { id: otherTenant.id } });
   });
 
   it('lists variants by product filtered by tenant', async () => {
@@ -178,11 +188,24 @@ describe('Catalog service (public, no auth)', () => {
   });
 
   it('does not leak products from other tenants', async () => {
-    const otherTenantProducts = await getCatalogProducts('other-tenant');
+    // Create a product in a different tenant
+    const otherTenantId = 'other-tenant-test-' + Date.now();
+    const otherTenant = await prisma.tenant.create({
+      data: { name: 'Other Tenant', slug: 'other-tenant-' + Date.now() },
+    });
+    const otherProduct = await prisma.product.create({
+      data: { name: 'Other Tenant Product', active: true, tenantId: otherTenant.id },
+    });
+
+    // Get catalog for our test tenant
     const thisTenantProducts = await getCatalogProducts(TEST_TENANT_ID);
 
-    const otherIds = new Set(otherTenantProducts.map((p) => p.id));
-    const leaking = thisTenantProducts.filter((p) => otherIds.has(p.id));
+    // Verify the other tenant's product is not in our catalog
+    const leaking = thisTenantProducts.filter((p) => p.id === otherProduct.id);
     expect(leaking).toHaveLength(0);
+
+    // Cleanup
+    await prisma.product.delete({ where: { id: otherProduct.id } });
+    await prisma.tenant.delete({ where: { id: otherTenant.id } });
   });
 });

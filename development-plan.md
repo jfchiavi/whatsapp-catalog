@@ -193,16 +193,16 @@ Completar la compra pública: carrito server-side, selección de sucursal, deriv
 #### Frontend — Cart API + Hooks
 - [x] Crear `services/cart.api.ts`: todas las llamadas API del carrito.
 - [x] Crear `hooks/useCart.ts`: queries y mutations del carrito.
-- [ ] Actualizar `store/cart.store.ts`: sincronizar con server-side cart.
+- [x] Actualizar `store/cart.store.ts`: sincronizar con server-side cart.
 
 #### Frontend — Cart Components
-- [ ] Actualizar `CartDrawer.tsx`: selector de sucursal, validación server-side.
-- [ ] Actualizar `CartSummary.tsx`: disponibilidad por sucursal, "Comprar por WhatsApp" llama API primero.
-- [ ] Actualizar `CartItem.tsx`: mostrar disponibilidad, bloquear si no disponible en sucursal seleccionada.
+- [x] Actualizar `CartDrawer.tsx`: selector de sucursal, validación server-side.
+- [x] Actualizar `CartSummary.tsx`: disponibilidad por sucursal, "Comprar por WhatsApp" llama API primero.
+- [x] Actualizar `CartItem.tsx`: mostrar disponibilidad, bloquear si no disponible en sucursal seleccionada.
 
 #### Frontend — Order Pages
 - [x] Crear `features/orders/OrdersPage.tsx`: lista de pedidos con badges de estado.
-- [ ] Crear `features/orders/OrderDetailPage.tsx`: detalle de pedido con items, acciones de estado.
+- [x] Crear `features/orders/OrderDetailPage.tsx`: detalle de pedido con items, acciones de estado.
 - [x] Agregar rutas: `/orders`.
 - [x] Agregar entrada en sidebar: "Pedidos" con permiso `sales`.
 
@@ -211,7 +211,7 @@ Completar la compra pública: carrito server-side, selección de sucursal, deriv
 - [x] Validación de stock: rechazar si insuficiente.
 - [x] Selección de sucursal: recalcular disponibilidad.
 - [x] Creación de orden: formato del mensaje WhatsApp, idempotencia.
-- [ ] Confirmación de orden: descuento de stock, creación de Sale.
+- [x] Confirmación de orden: descuento de stock, creación de Sale.
 - [x] Cross-tenant: aislamiento de cart/order.
 
 ### Checks de validación manual
@@ -378,10 +378,10 @@ Actualizar esta sección después de cada sesión de trabajo. `[x]` requiere evi
 - [ ] Slice 1.1 completo (implementación completa, validación manual pendiente)
 - [x] Slice 2 completo (implementación completa, validación manual pendiente)
 - [x] Prerrequisitos completos (implementación completa, validación manual pendiente)
-- [ ] Slice 3 completo (implementación ~80%, validación manual pendiente)
+- [ ] Slice 3 completo (implementación completa, validación manual pendiente)
 - [ ] Slice 4 completo
 - [ ] Slice 5 completo
-- [ ] Próximo slice activo: Slice 3 (completar frontend cart components + order detail)
-- [x] Última actualización: Slice 3 implementación parcial completada (prerequisitos + backend + frontend API/hooks + OrdersPage)
+- [ ] Próximo slice activo: Slice 4 (Panel SUPER_ADMIN)
+- [x] Última actualización: Slice 3 implementación completa (frontend cart sync + order detail + tests)
 
 Cuando el usuario solicite **"Actualizar progreso"**, comparar este checklist con el código actual y con la evidencia proporcionada. Cuando solicite **"Continuar con el Slice #"**, trabajar únicamente en ese slice, mantener los contratos anteriores y actualizar esta sección al terminar.

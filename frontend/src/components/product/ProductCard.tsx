@@ -5,12 +5,12 @@ import { ShoppingCart } from "lucide-react";
 import { useCartStore } from "../../store/cart.store";
 
 export const ProductCard = ({ product }: { product: Product }) => {
-  const add = useCartStore((s) => s.add);
+  const { add } = useCartStore();
   const defaultVariant = product.variants[0];
 
   const handleAdd = () => {
     if (!defaultVariant) return;
-    add(product, defaultVariant, 1);
+    add(defaultVariant.id, 1);
   };
 
   return (

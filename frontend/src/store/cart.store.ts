@@ -1,73 +1,101 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
-import type { Product, Variant } from "../types/product";
+import { useCart, useAddToCart, useUpdateCartItem, useRemoveCartItem, useSetCartBranch, useSubmitCart } from "../hooks/useCart";
+import { useAuthStore } from "./auth.store";
+import type { CartItemData } from "../services/cart.api";
+
+const getOrCreateSessionId = (tenantId: string): string => {
+  const key = `cart-session-${tenantId}`;
+  let sessionId = localStorage.getItem(key);
+  if (!sessionId) {
+    sessionId = crypto.randomUUID();
+    localStorage.setItem(key, sessionId);
+  }
+  return sessionId;
+};
 
 export interface CartItem {
   id: string;
-  product: Product;
-  variant: Variant;
+  variantId: string;
+  productId: string;
+  productName: string;
+  productImageUrl?: string;
+  variantSku: string;
+  variantPrice: number;
+  variantAttributes: Record<string, string>;
   quantity: number;
+  unitPriceSnapshot: number;
 }
 
-export interface CartStore {
-  tenantId: string | null;
-  items: CartItem[];
-  setTenant: (tenantId: string) => void;
-  add: (product: Product, variant: Variant, qty: number) => void;
-  remove: (id: string) => void;
-  update: (id: string, qty: number) => void;
-  clearCart: () => void;
-  totalItems: () => number;
-  subtotal: () => number;
-}
+export const useCartStore = () => {
+  const user = useAuthStore((s) => s.user);
+  const tenantId = user?.tenantId || null;
+  const sessionId = tenantId ? getOrCreateSessionId(tenantId) : null;
 
-export const useCartStore = create<CartStore>()(
-  persist(
-    (set, get) => ({
-      tenantId: null,
-      items: [],
-      setTenant: (tenantId) => {
-        if (get().tenantId !== tenantId) {
-          // Clear cart when switching tenants
-          set({ tenantId, items: [] });
-        }
-      },
-      add: (product, variant, qty) => {
-        const existing = get().items.find(
-          (i) => i.product.id === product.id && i.variant.id === variant.id
-        );
+  const { data: serverCart, isLoading } = useCart(tenantId, sessionId);
+  const addToCartMutation = useAddToCart();
+  const updateCartItemMutation = useUpdateCartItem();
+  const removeCartItemMutation = useRemoveCartItem();
+  const setCartBranchMutation = useSetCartBranch();
+  const submitCartMutation = useSubmitCart();
 
-        if (existing) {
-          // Increment quantity for existing item
-          set({
-            items: get().items.map((i) =>
-              i.id === existing.id ? { ...i, quantity: i.quantity + qty } : i
-            ),
-          });
-        } else {
-          // Add new item
-          set({
-            items: [
-              ...get().items,
-              { id: crypto.randomUUID(), product, variant, quantity: qty },
-            ],
-          });
-        }
-      },
-      remove: (id) =>
-        set({ items: get().items.filter((i) => i.id !== id) }),
-      update: (id, qty) =>
-        set({
-          items: get().items.map((i) =>
-            i.id === id ? { ...i, quantity: qty } : i
-          ),
-        }),
-      clearCart: () => set({ items: [] }),
-      totalItems: () =>
-        get().items.reduce((a, i) => a + i.quantity, 0),
-      subtotal: () =>
-        get().items.reduce((a, i) => a + i.variant.price * i.quantity, 0),
-    }),
-    { name: "cart-storage" }
-  )
-);
+  const cartId = serverCart?.id || null;
+  const branchId = serverCart?.branchId || null;
+  const branch = serverCart?.branch || null;
+
+  const items: CartItem[] = (serverCart?.items || []).map((item: CartItemData) => ({
+    id: item.id,
+    variantId: item.variantId,
+    productId: item.variant.product.id,
+    productName: item.variant.product.name,
+    productImageUrl: item.variant.product.imageUrl,
+    variantSku: item.variant.sku,
+    variantPrice: item.variant.price,
+    variantAttributes: item.variant.attributes,
+    quantity: item.quantity,
+    unitPriceSnapshot: item.unitPriceSnapshot,
+  }));
+
+  const totalItems = () => items.reduce((a, i) => a + i.quantity, 0);
+  const subtotal = () => items.reduce((a, i) => a + i.unitPriceSnapshot * i.quantity, 0);
+
+  const add = (variantId: string, quantity: number) => {
+    if (!cartId || !tenantId) return;
+    addToCartMutation.mutate({ cartId, tenantId, variantId, quantity });
+  };
+
+  const update = (itemId: string, quantity: number) => {
+    if (!cartId || !tenantId) return;
+    updateCartItemMutation.mutate({ cartId, tenantId, itemId, quantity });
+  };
+
+  const remove = (itemId: string) => {
+    if (!cartId || !tenantId) return;
+    removeCartItemMutation.mutate({ cartId, tenantId, itemId });
+  };
+
+  const setBranch = (branchId: string) => {
+    if (!cartId || !tenantId) return;
+    setCartBranchMutation.mutate({ cartId, tenantId, branchId });
+  };
+
+  const submitOrder = (customerName: string, customerPhone: string, customerNotes?: string) => {
+    if (!cartId || !tenantId) return;
+    return submitCartMutation.mutateAsync({ tenantId, cartId, customerName, customerPhone, customerNotes });
+  };
+
+  return {
+    tenantId,
+    cartId,
+    branchId,
+    branch,
+    items,
+    isLoading,
+    totalItems,
+    subtotal,
+    add,
+    update,
+    remove,
+    setBranch,
+    submitOrder,
+    isSubmitting: submitCartMutation.isPending,
+  };
+};

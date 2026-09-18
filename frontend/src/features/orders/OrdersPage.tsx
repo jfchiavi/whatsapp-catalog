@@ -1,5 +1,6 @@
 import { useAuthStore } from '@/store/auth.store';
 import { useOrders, useUpdateOrderStatus, useConfirmOrder } from '../../hooks/useCart';
+import { Link } from 'react-router-dom';
 
 export default function OrdersPage() {
   const user = useAuthStore((s) => s.user);
@@ -58,6 +59,12 @@ export default function OrdersPage() {
                 <td className="p-2 text-center">${order.totalSnapshot.toFixed(2)}</td>
                 <td className="p-2 text-center">{statusBadge(order.status)}</td>
                 <td className="p-2 text-center space-x-1">
+                  <Link
+                    to={`/orders/${order.id}`}
+                    className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 inline-block"
+                  >
+                    Ver
+                  </Link>
                   {order.status === 'pending' && (
                     <button
                       onClick={() =>

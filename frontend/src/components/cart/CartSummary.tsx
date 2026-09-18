@@ -1,13 +1,32 @@
+import { useState } from "react";
 import { useCartStore } from "../../store/cart.store";
-import { whatsappUrl } from "../../lib/whatsapp";
-import {Button, WhatsappButton} from "../common/Button";
+import { Button, WhatsappButton } from "../common/Button";
 
 export const CartSummary = ({ onClose }: { onClose: () => void }) => {
-  const items = useCartStore(s => s.items);
-  const subtotal = useCartStore(s => s.subtotal);
+  const { subtotal, submitOrder, isSubmitting, branchId } = useCartStore();
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [showForm, setShowForm] = useState(false);
 
-  const checkout = () => {
-    window.open(whatsappUrl(items), "_blank");
+  const handleCheckout = async () => {
+    if (!showForm) {
+      setShowForm(true);
+      return;
+    }
+
+    if (!customerName.trim() || !customerPhone.trim()) {
+      return;
+    }
+
+    try {
+      const order = await submitOrder(customerName, customerPhone);
+      if (order?.whatsappUrl) {
+        window.open(order.whatsappUrl, "_blank");
+      }
+      onClose();
+    } catch {
+      // Error is handled by the mutation
+    }
   };
 
   return (
@@ -17,11 +36,31 @@ export const CartSummary = ({ onClose }: { onClose: () => void }) => {
         <span>${subtotal().toLocaleString()}</span>
       </div>
 
+      {showForm && (
+        <div className="space-y-2">
+          <input
+            type="text"
+            placeholder="Tu nombre"
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            className="w-full border rounded-lg px-3 py-2 text-sm"
+          />
+          <input
+            type="tel"
+            placeholder="Tu teléfono (ej: +54 9 11 1234-5678)"
+            value={customerPhone}
+            onChange={(e) => setCustomerPhone(e.target.value)}
+            className="w-full border rounded-lg px-3 py-2 text-sm"
+          />
+        </div>
+      )}
+
       <WhatsappButton
-        onClick={checkout}
-        className="w-full flex items-center justify-center gap-2 bg-whatsapp text-white py-3 rounded-lg"
+        onClick={handleCheckout}
+        disabled={isSubmitting || !branchId || (showForm && (!customerName.trim() || !customerPhone.trim()))}
+        className="w-full flex items-center justify-center gap-2 bg-whatsapp text-white py-3 rounded-lg disabled:opacity-50"
       >
-        Comprar por WhatsApp
+        {isSubmitting ? "Procesando..." : showForm ? "Confirmar pedido" : "Comprar por WhatsApp"}
       </WhatsappButton>
 
       <Button

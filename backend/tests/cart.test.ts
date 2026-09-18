@@ -8,19 +8,27 @@ import {
   setCartBranch,
   submitCart,
 } from '../src/modules/cart/cart.service';
+import { confirmOrder, updateOrderStatus } from '../src/modules/orders/order.service';
 import { AppError } from '../src/lib/errors';
 
 const TEST_TENANT_ID = '0b95f160-f948-5ac3-921a-56029e130fa9';
 const BRANCH_CENTRAL = '1075ea0b-a199-5f89-ad10-bcb83627b8a6';
 const VARIANT_REM_S = 'a9fbfe58-6361-557b-90c0-7dadf311090d';
 const TEST_SESSION_ID = 'test-session-123';
+const TEST_USER_ID = '3446d34c-deb5-58ef-8822-2b94fb6f5842'; // Admin Demo
 
 describe('Cart service', () => {
   let cartId: string;
 
+  beforeAll(async () => {
+    // Clean up any existing test data
+    await prisma.order.deleteMany({ where: { tenantId: TEST_TENANT_ID, customerName: { in: ['Test Customer', 'Confirm Test Customer'] } } });
+    await prisma.cart.deleteMany({ where: { tenantId: TEST_TENANT_ID, sessionId: { in: [TEST_SESSION_ID, 'confirm-test-session', 'empty-session-unique'] } } });
+  });
+
   afterAll(async () => {
-    await prisma.order.deleteMany({ where: { tenantId: TEST_TENANT_ID, customerName: 'Test Customer' } });
-    await prisma.cart.deleteMany({ where: { tenantId: TEST_TENANT_ID, sessionId: TEST_SESSION_ID } });
+    await prisma.order.deleteMany({ where: { tenantId: TEST_TENANT_ID, customerName: { in: ['Test Customer', 'Confirm Test Customer'] } } });
+    await prisma.cart.deleteMany({ where: { tenantId: TEST_TENANT_ID, sessionId: { in: [TEST_SESSION_ID, 'confirm-test-session', 'empty-session-unique'] } } });
     await prisma.$disconnect();
   });
 
@@ -83,9 +91,80 @@ describe('Cart service', () => {
   });
 
   it('rejects submit on empty cart', async () => {
-    const emptyCart = await getOrCreateCart(TEST_TENANT_ID, 'empty-session');
+    const emptyCart = await getOrCreateCart(TEST_TENANT_ID, 'empty-session-unique');
     await expect(
       submitCart(TEST_TENANT_ID, emptyCart.id, 'Test', '+5491112345678')
     ).rejects.toThrow(AppError);
+  });
+
+  describe('Order confirmation', () => {
+    let orderId: string;
+
+    beforeAll(async () => {
+      const cart = await getOrCreateCart(TEST_TENANT_ID, 'confirm-test-session');
+      await addToCart(TEST_TENANT_ID, cart.id, VARIANT_REM_S, 2);
+      await setCartBranch(TEST_TENANT_ID, cart.id, BRANCH_CENTRAL);
+      const order = await submitCart(
+        TEST_TENANT_ID,
+        cart.id,
+        'Confirm Test Customer',
+        '+5491112345678'
+      );
+      orderId = order.id;
+    });
+
+    it('transitions order to contacted then confirmed', async () => {
+      await updateOrderStatus(TEST_TENANT_ID, orderId, 'contacted');
+      const order = await prisma.order.findUnique({ where: { id: orderId } });
+      expect(order?.status).toBe('contacted');
+
+      await updateOrderStatus(TEST_TENANT_ID, orderId, 'confirmed');
+      const order2 = await prisma.order.findUnique({ where: { id: orderId } });
+      expect(order2?.status).toBe('confirmed');
+    });
+
+    it('confirms order and deducts stock, creates sale', async () => {
+      const stockBefore = await prisma.stock.findUnique({
+        where: {
+          tenantId_variantId_branchId: {
+            tenantId: TEST_TENANT_ID,
+            variantId: VARIANT_REM_S,
+            branchId: BRANCH_CENTRAL,
+          },
+        },
+      });
+
+      const sale = await confirmOrder(TEST_TENANT_ID, orderId, TEST_USER_ID);
+
+      expect(sale).toBeDefined();
+      expect(sale.total).toBeGreaterThan(0);
+      expect(sale.items.length).toBeGreaterThan(0);
+
+      const stockAfter = await prisma.stock.findUnique({
+        where: {
+          tenantId_variantId_branchId: {
+            tenantId: TEST_TENANT_ID,
+            variantId: VARIANT_REM_S,
+            branchId: BRANCH_CENTRAL,
+          },
+        },
+      });
+
+      expect(stockAfter!.quantity).toBe(stockBefore!.quantity - 2);
+
+      const order = await prisma.order.findUnique({ where: { id: orderId } });
+      expect(order?.status).toBe('completed');
+
+      const movement = await prisma.stockMovement.findFirst({
+        where: {
+          tenantId: TEST_TENANT_ID,
+          variantId: VARIANT_REM_S,
+          type: 'SALE',
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+      expect(movement).toBeDefined();
+      expect(movement?.quantity).toBe(2);
+    });
   });
 });
