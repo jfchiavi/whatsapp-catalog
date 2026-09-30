@@ -1,3 +1,4 @@
+import { requireTenantId } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { authMiddleware } from '@/middlewares/auth.middleware';
@@ -31,7 +32,7 @@ export async function POST(
     const variant = await createVariant({
       ...parsed.data,
       attributes: parsed.data.attributes as Prisma.InputJsonValue,
-      tenantId: auth.tenantId,
+      tenantId: requireTenantId(auth.tenantId),
     });
 
     return NextResponse.json({ success: true, data: variant }, { status: 201 });

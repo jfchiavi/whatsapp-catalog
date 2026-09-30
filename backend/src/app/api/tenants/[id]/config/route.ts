@@ -1,3 +1,4 @@
+import { requireTenantId } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { authMiddleware } from '@/middlewares/auth.middleware';
@@ -18,7 +19,7 @@ export async function GET(
   try {
     const { id } = await params;
 
-    if (auth.role !== 'SUPER_ADMIN' && auth.tenantId !== id) {
+    if (auth.role !== 'SUPER_ADMIN' && requireTenantId(auth.tenantId) !== id) {
       return NextResponse.json(
         { success: false, error: { code: 'FORBIDDEN', message: 'Cannot access other tenant config' } },
         { status: 403 }
@@ -66,7 +67,7 @@ export async function PUT(
   try {
     const { id } = await params;
 
-    if (auth.role !== 'SUPER_ADMIN' && auth.tenantId !== id) {
+    if (auth.role !== 'SUPER_ADMIN' && requireTenantId(auth.tenantId) !== id) {
       return NextResponse.json(
         { success: false, error: { code: 'FORBIDDEN', message: 'Cannot modify other tenant config' } },
         { status: 403 }

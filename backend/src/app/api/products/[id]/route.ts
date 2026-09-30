@@ -1,3 +1,4 @@
+import { requireTenantId } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { authMiddleware } from '@/middlewares/auth.middleware';
@@ -19,7 +20,7 @@ export async function GET(
 
   try {
     const { id } = await params;
-    const product = await getProductById(id, auth.tenantId);
+    const product = await getProductById(id, requireTenantId(auth.tenantId));
     return NextResponse.json({ success: true, data: product });
   } catch (error) {
     return handleError(error);
@@ -46,7 +47,7 @@ export async function PUT(
         return handleError(nerror);
       }
 
-      const product = await updateProduct(id, auth.tenantId, {
+      const product = await updateProduct(id, requireTenantId(auth.tenantId), {
         ...parsed.data,
         baseAttributes: parsed.data.baseAttributes as Prisma.InputJsonValue | undefined,
       });
@@ -71,7 +72,7 @@ export async function DELETE(
   try {    
     const { id } = await params;
 
-    await deleteProduct(id, auth.tenantId);
+    await deleteProduct(id, requireTenantId(auth.tenantId));
 
     return NextResponse.json(
       { success: true, data: { message: 'Product deleted successfully' } }, 

@@ -1,3 +1,4 @@
+import { requireTenantId } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { authMiddleware } from '@/middlewares/auth.middleware';
 import { permissionMiddleware } from '@/middlewares/permission.middleware';
@@ -21,7 +22,7 @@ export async function GET(
 
   try {
     const { id } = await params;
-    const branch = await getBranchById(id, auth.tenantId);
+    const branch = await getBranchById(id, requireTenantId(auth.tenantId));
 
     if (!branch) {
       return NextResponse.json(
@@ -58,7 +59,7 @@ export async function PUT(
       );
     }
 
-    const branch = await updateBranch(id, auth.tenantId, parsed.data);
+    const branch = await updateBranch(id, requireTenantId(auth.tenantId), parsed.data);
     return NextResponse.json({ success: true, data: branch });
   } catch (error) {
     return handleError(error);
@@ -77,7 +78,7 @@ export async function DELETE(
 
   try {
     const { id } = await params;
-    await deactivateBranch(id, auth.tenantId);
+    await deactivateBranch(id, requireTenantId(auth.tenantId));
     return NextResponse.json({ success: true, data: { message: 'Branch deactivated' } });
   } catch (error) {
     return handleError(error);

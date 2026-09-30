@@ -12,14 +12,11 @@ export interface SaleItem {
 
 export interface Sale {
     id: string;
-    date: string;
+    createdAt: string;
     branchId: string | null;
-    sellerId: string;
-    customer?: {
-        name: string;
-        phone?: string;
-        email?: string;
-    };
+    userId: string;
+    user?: { id: string; name: string; email?: string };
+    branch?: { id: string; name: string };
     items: SaleItem[];
     subtotal: number;
     discount: number;

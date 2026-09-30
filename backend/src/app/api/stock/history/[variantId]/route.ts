@@ -1,3 +1,4 @@
+import { requireTenantId } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { authMiddleware } from '@/middlewares/auth.middleware';
 import { permissionMiddleware } from '@/middlewares/permission.middleware';
@@ -19,7 +20,7 @@ export async function GET(
     const { searchParams } = new URL(req.url);
     const branchId = searchParams.get('branchId') || undefined;
 
-    const history = await getStockHistory(variantId, auth.tenantId, branchId);
+    const history = await getStockHistory(variantId, requireTenantId(auth.tenantId), branchId);
     return NextResponse.json({ success: true, data: history });
   } catch (error) {
     return handleError(error);

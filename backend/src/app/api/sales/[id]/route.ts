@@ -1,3 +1,4 @@
+import { requireTenantId } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { handleError } from '@/lib/errors';
 import { authMiddleware } from '@/middlewares/auth.middleware';
@@ -18,7 +19,7 @@ export async function GET(
     const { id } = await params;
 
     const sale = await prisma.sale.findFirst({
-      where: { id, tenantId: auth.tenantId! },
+      where: { id, tenantId: requireTenantId(auth.tenantId) },
       include: {
         items: {
           include: {

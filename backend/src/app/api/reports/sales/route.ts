@@ -1,3 +1,4 @@
+import { requireTenantId } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { authMiddleware } from '@/middlewares/auth.middleware';
 import { permissionMiddleware } from '@/middlewares/permission.middleware';
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
     );
   }
   try {
-    const report = await getSalesReport(fromDate, toDate, auth.tenantId);
+    const report = await getSalesReport(fromDate, toDate, requireTenantId(auth.tenantId));
     return NextResponse.json({ success: true, data: report });
   } catch (error) {
     console.error('REPORT SALES ERROR', error);

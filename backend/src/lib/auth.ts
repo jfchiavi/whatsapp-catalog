@@ -20,7 +20,7 @@ export const comparePassword = async (
 export const generateAccessToken = (payload: {
   userId: string;
   role: Role;
-  tenantId: string; // <-- Línea agregada
+  tenantId?: string | null;
   branchId?: string | null;
 }) => {
   return jwt.sign(payload, process.env.JWT_ACCESS_SECRET!, {
@@ -38,7 +38,7 @@ export const verifyAccessToken = (token: string) => {
   return jwt.verify(token, process.env.JWT_ACCESS_SECRET!) as {
     userId: string;
     role: Role;
-    tenantId: string; // <-- Línea agregada
+    tenantId?: string | null;
     branchId?: string | null;
   };
 };
@@ -47,4 +47,14 @@ export const verifyRefreshToken = (token: string) => {
   return jwt.verify(token, process.env.JWT_REFRESH_SECRET!) as {
     userId: string;
   };
+};
+
+export const requireTenantId = (tenantId: string | null | undefined | '', context?: string): string => {
+  if (!tenantId) {
+    const msg = context
+      ? `${context} requires an authenticated tenant`
+      : 'Tenant ID is required';
+    throw new Error(msg);
+  }
+  return tenantId;
 };

@@ -1,3 +1,4 @@
+import { requireTenantId } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { authMiddleware } from '@/middlewares/auth.middleware';
 import { permissionMiddleware } from '@/middlewares/permission.middleware';
@@ -10,6 +11,6 @@ export async function GET(req: NextRequest) {
   const perm = permissionMiddleware(auth.role, 'reports');
   if (perm) return perm;
 
-  const report = await getInventoryReport(auth.tenantId);
+  const report = await getInventoryReport(requireTenantId(auth.tenantId));
   return NextResponse.json({ success: true, data: report });
 }

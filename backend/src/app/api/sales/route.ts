@@ -1,3 +1,4 @@
+import { requireTenantId } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { authMiddleware } from '@/middlewares/auth.middleware';
 import { permissionMiddleware } from '@/middlewares/permission.middleware';
@@ -13,7 +14,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const branchId = auth.branchId || undefined;
-    const sales = await getSales(auth.tenantId, branchId);
+    const sales = await getSales(requireTenantId(auth.tenantId), branchId);
     return NextResponse.json({ success: true, data: sales });
   } catch (error: any) {
     return NextResponse.json(
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest) {
     const sale = await createSale(
       auth.userId,
       branchIdToUse,
-      auth.tenantId,
+      requireTenantId(auth.tenantId),
       parsed.data.items
     );
     return NextResponse.json({ success: true, data: sale }, { status: 201 });

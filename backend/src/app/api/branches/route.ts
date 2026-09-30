@@ -1,3 +1,4 @@
+import { requireTenantId } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { authMiddleware } from '@/middlewares/auth.middleware';
 import { permissionMiddleware } from '@/middlewares/permission.middleware';
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
   const perm = permissionMiddleware(auth.role, 'dashboard');
   if (perm) return perm;
 
-  const branches = await getBranches(auth.tenantId);
+  const branches = await getBranches(requireTenantId(auth.tenantId));
   return NextResponse.json({ success: true, data: branches });
 }
 
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const branch = await createBranch({ ...parsed.data, tenantId: auth.tenantId });
+    const branch = await createBranch({ ...parsed.data, tenantId: requireTenantId(auth.tenantId) });
     return NextResponse.json({ success: true, data: branch }, { status: 201 });    
   } catch (error) {
     return handleError(error);

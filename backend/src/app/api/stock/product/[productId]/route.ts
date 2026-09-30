@@ -1,3 +1,4 @@
+import { requireTenantId } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { authMiddleware } from '@/middlewares/auth.middleware';
 import { permissionMiddleware } from '@/middlewares/permission.middleware';
@@ -16,7 +17,7 @@ export async function GET(
 
   try {
     const { productId } = await params;
-    const stock = await getStockByProduct(productId, auth.tenantId);
+    const stock = await getStockByProduct(productId, requireTenantId(auth.tenantId));
     return NextResponse.json({ success: true, data: stock });
   } catch (error) {
     return handleError(error);

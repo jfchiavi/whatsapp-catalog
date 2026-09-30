@@ -1,3 +1,4 @@
+import { requireTenantId } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { authMiddleware } from '@/middlewares/auth.middleware';
 import { permissionMiddleware } from '@/middlewares/permission.middleware';
@@ -22,6 +23,6 @@ export async function PUT(
   }
 
   const { id } = await params;
-  const order = await updateWhatsappStatus(id, auth.tenantId, parsed.data.status);
+  const order = await updateWhatsappStatus(id, requireTenantId(auth.tenantId), parsed.data.status);
   return NextResponse.json({ success: true, data: order });
 }

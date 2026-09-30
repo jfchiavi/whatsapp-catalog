@@ -8,14 +8,17 @@ import {
   Settings,
   MessageSquare,
   ClipboardList,
+  Building2,
 } from 'lucide-react';
 import type { Permission } from '@/types/permissions';
+import type { UserRole } from '@/types/auth';
 
 export interface SidebarItem {
   label: string;
   path: string;
   icon: React.ElementType;
   permission: Permission;
+  excludeRoles?: UserRole[];
 }
 
 export const SIDEBAR_ITEMS: SidebarItem[] = [
@@ -24,6 +27,18 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     path: '/dashboard',
     icon: LayoutDashboard,
     permission: 'dashboard',
+  },
+  {
+    label: 'Plataforma',
+    path: '/platform',
+    icon: Building2,
+    permission: 'tenants',
+  },
+  {
+    label: 'Tenants',
+    path: '/platform/tenants',
+    icon: Building2,
+    permission: 'tenants',
   },
   {
     label: 'Productos',
@@ -54,6 +69,7 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     path: '/orders',
     icon: ClipboardList,
     permission: 'sales',
+    excludeRoles: ['SUPER_ADMIN'],
   },
   {
     label: 'Reportes',

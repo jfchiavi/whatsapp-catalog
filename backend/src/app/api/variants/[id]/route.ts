@@ -1,3 +1,4 @@
+import { requireTenantId } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { authMiddleware } from '@/middlewares/auth.middleware';
@@ -28,7 +29,7 @@ export async function PUT(
       );
     }
 
-    const variant = await updateVariant(id, auth.tenantId, {
+    const variant = await updateVariant(id, requireTenantId(auth.tenantId), {
       ...parsed.data,
       attributes: parsed.data.attributes as Prisma.InputJsonValue | undefined,
     });
@@ -51,7 +52,7 @@ export async function DELETE(
 
   try {
     const { id } = await params;
-    await deleteVariant(id, auth.tenantId);
+    await deleteVariant(id, requireTenantId(auth.tenantId));
     return NextResponse.json({ success: true, data: { message: 'Variant deleted successfully' } });
   } catch (error) {
     return handleError(error);

@@ -32,5 +32,5 @@ export const updateWhatsAppOrderStatus = async (id: string, status: string) => {
         return { success: true };
     }
 
-    return api.put(`/whatsapp/orders/${id}`, { status });
+    return api.put(`/whatsapp/orders/${id}/status`, { status });
 };

@@ -18,6 +18,9 @@ import TenantSettingsPage from '@/features/settings/TenantSettingsPage';
 import WhatsAppOrdersPage from '@/features/whatsapp/WhatsAppOrdersPage';
 import OrdersPage from '@/features/orders/OrdersPage';
 import OrderDetailPage from '@/features/orders/OrderDetailPage';
+import TenantsPage from '@/features/platform/TenantsPage';
+import PlatformDashboard from '@/features/platform/PlatformDashboard';
+import UsersPage from '@/features/users/UsersPage';
 import ErrorPage from '@/components/dashboard/layout/ErrorPage';
 
 export const router = createBrowserRouter([
@@ -63,6 +66,14 @@ export const router = createBrowserRouter([
           { path: '/whatsapp-orders', lazy: async () => {return {Component: WhatsAppOrdersPage }}},
           { path: '/orders', lazy: async () => {return {Component: OrdersPage }}},
           { path: '/orders/:id', lazy: async () => {return {Component: OrderDetailPage }}},
+          { path: '/users', lazy: async () => {return {Component: UsersPage }}},
+          {
+            path: '/platform',
+            children: [
+              { index: true, lazy: async () => {return {Component: PlatformDashboard};} },
+              { path: 'tenants', lazy: async () => {return {Component: TenantsPage};} },
+            ],
+          },
         ],
       },
     ],

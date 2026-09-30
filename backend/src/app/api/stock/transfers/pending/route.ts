@@ -1,3 +1,4 @@
+import { requireTenantId } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { authMiddleware } from '@/middlewares/auth.middleware';
 import { permissionMiddleware } from '@/middlewares/permission.middleware';
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const branchId = searchParams.get('branchId') || undefined;
 
-    const transfers = await getPendingTransfers(auth.tenantId, branchId);
+    const transfers = await getPendingTransfers(requireTenantId(auth.tenantId), branchId);
     return NextResponse.json({ success: true, data: transfers });
   } catch (error) {
     return handleError(error);

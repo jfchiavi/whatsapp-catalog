@@ -1,3 +1,4 @@
+import { requireTenantId } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { authMiddleware } from '@/middlewares/auth.middleware';
@@ -33,7 +34,7 @@ export async function PATCH(
     }
 
     const movement = await prisma.stockMovement.findFirst({
-      where: { id: movementId, tenantId: auth.tenantId, type: 'TRANSFER', status: 'PENDING' },
+      where: { id: movementId, tenantId: requireTenantId(auth.tenantId), type: 'TRANSFER', status: 'PENDING' },
     });
 
     if (!movement) {
@@ -53,7 +54,7 @@ export async function PATCH(
     const result = await receiveTransfer(
       movementId,
       parsed.data.receivedQuantity,
-      auth.tenantId,
+      requireTenantId(auth.tenantId),
       auth.userId
     );
     return NextResponse.json({ success: true, data: result });

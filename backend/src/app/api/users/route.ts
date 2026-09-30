@@ -1,3 +1,4 @@
+import { requireTenantId } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { authMiddleware } from '@/middlewares/auth.middleware';
 import { permissionMiddleware } from '@/middlewares/permission.middleware';
@@ -16,7 +17,8 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const branchId = searchParams.get('branchId') || undefined;
 
-    const users = await getUsers(auth.tenantId!, auth.role, branchId);
+    const tenantId = auth.role === 'SUPER_ADMIN' ? (auth.tenantId || null) : requireTenantId(auth.tenantId);
+    const users = await getUsers(tenantId, auth.role, branchId);
     return NextResponse.json({ success: true, data: users });
   } catch (error) {
     return handleError(error);
@@ -41,7 +43,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const user = await createUser({ ...parsed.data, tenantId: auth.tenantId! });
+    const user = await createUser({ ...parsed.data, tenantId: requireTenantId(auth.tenantId) });
     return NextResponse.json({ success: true, data: user }, { status: 201 });
   } catch (error) {
     return handleError(error);

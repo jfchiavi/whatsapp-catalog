@@ -51,10 +51,10 @@ export default function SalesListPage() {
             {list.data?.map((sale: any) => (
               <tr key={sale.id} className="border-t">
                 <td className="p-2">
-                  {new Date(sale.date).toLocaleDateString()}
+                  {new Date(sale.createdAt).toLocaleDateString()}
                 </td>
                 <td className="p-2">{sale.branch?.name ?? sale.branchId}</td>
-                <td className="p-2">{sale.seller?.name ?? sale.sellerId}</td>
+                <td className="p-2">{sale.user?.name ?? sale.userId}</td>
                 <td className="p-2 text-center">
                   ${sale.total}
                 </td>

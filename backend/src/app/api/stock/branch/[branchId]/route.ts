@@ -1,3 +1,4 @@
+import { requireTenantId } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { authMiddleware } from '@/middlewares/auth.middleware';
 import { permissionMiddleware } from '@/middlewares/permission.middleware';
@@ -17,14 +18,14 @@ export async function GET(
   try {
     const { branchId } = await params;
 
-    if (auth.role !== 'SUPER_ADMIN' && auth.branchId !== branchId) {
+    if (auth.role === 'BRANCH_MANAGER' && auth.branchId !== branchId) {
       return NextResponse.json(
         { success: false, error: { code: 'FORBIDDEN', message: 'Unauthorized access to branch' } },
         { status: 403 }
       );
     }
 
-    const stock = await getStockByBranch(branchId, auth.tenantId);
+    const stock = await getStockByBranch(branchId, requireTenantId(auth.tenantId));
     return NextResponse.json({ success: true, data: stock });
   } catch (error) {
     return handleError(error);

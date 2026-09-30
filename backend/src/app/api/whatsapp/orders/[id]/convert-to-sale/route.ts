@@ -1,3 +1,4 @@
+import { requireTenantId } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { authMiddleware } from '@/middlewares/auth.middleware';
 import { permissionMiddleware } from '@/middlewares/permission.middleware';
@@ -21,7 +22,7 @@ export async function POST(
       id,
       auth.userId,
       auth.branchId!,
-      auth.tenantId,
+      requireTenantId(auth.tenantId),
       body.items
     );
     return NextResponse.json({ success: true, data: sale });

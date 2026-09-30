@@ -14,6 +14,7 @@ export async function GET(req: NextRequest) {
       email: true,
       role: true,
       branchId: true,
+      tenantId: true,
     },
   });
 

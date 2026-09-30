@@ -50,7 +50,7 @@ export async function POST(req: Request) {
   const accessToken = generateAccessToken({
     userId: user.id,
     role: user.role,
-    tenantId: user.tenantId ?? '',
+    tenantId: user.tenantId ?? null,
     branchId: user.branchId,
   });
 

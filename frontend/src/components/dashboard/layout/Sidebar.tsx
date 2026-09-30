@@ -33,6 +33,7 @@ export const Sidebar = () => {
             <RoleBasedRender
               key={item.path}
               permission={item.permission}
+              excludeRoles={item.excludeRoles}
             >
               <NavLink
                 to={item.path}

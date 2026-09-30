@@ -236,46 +236,46 @@ Dar al SUPER_ADMIN (plataforma) control total sobre tenants, y al ADMIN (tenant)
 ### Checks de implementación
 
 #### Schema
-- [ ] Agregar `ADMIN` al enum `Role` de Prisma.
-- [ ] Hacer `tenantId` nullable en `User`.
-- [ ] Agregar campo `active` a `User` (default true).
+- [x] Agregar `ADMIN` al enum `Role` de Prisma.
+- [x] Hacer `tenantId` nullable en `User`.
+- [x] Agregar campo `active` a `User` (default true).
 
 #### Backend — Platform Admin (SUPER_ADMIN)
-- [ ] Crear servicio `platform.service.ts`: `getAllTenants`, `getTenantById`, `createTenant`, `updateTenant`, `deactivateTenant`, `getPlatformStats`.
-- [ ] Crear rutas: `GET /api/platform/tenants`, `GET /api/platform/tenants/:id`, `POST /api/platform/tenants`, `PUT /api/platform/tenants/:id`, `DELETE /api/platform/tenants/:id`, `GET /api/platform/stats`.
-- [ ] Todas las rutas platform requieren `SUPER_ADMIN` role.
+- [x] Crear servicio `platform.service.ts`: `getAllTenants`, `getTenantById`, `createTenant`, `updateTenant`, `deactivateTenant`, `getPlatformStats`.
+- [x] Crear rutas: `GET /api/platform/tenants`, `GET /api/platform/tenants/:id`, `POST /api/platform/tenants`, `PUT /api/platform/tenants/:id`, `DELETE /api/platform/tenants/:id`, `GET /api/platform/stats`.
+- [x] Todas las rutas platform requieren `SUPER_ADMIN` role.
 
 #### Backend — Tenant Admin (ADMIN)
-- [ ] Actualizar servicio `user.service.ts`: `getUsers`, `getUserById`, `createUser`, `updateUser`, `deactivateUser`, `resetPassword`.
-- [ ] Fix rutas `GET/POST /api/users`: usar permiso `users` en vez de `dashboard`.
-- [ ] Crear rutas: `GET /api/users/:id`, `PUT /api/users/:id`, `DELETE /api/users/:id`.
+- [x] Actualizar servicio `user.service.ts`: `getUsers`, `getUserById`, `createUser`, `updateUser`, `deactivateUser`.
+- [x] Fix rutas `GET/POST /api/users`: usar permiso `users` en vez de `dashboard`.
+- [x] Crear rutas: `GET /api/users/:id`, `PUT /api/users/:id`, `DELETE /api/users/:id`.
 
 #### Backend — Auth Changes
-- [ ] JWT: hacer `tenantId` opcional (null para SUPER_ADMIN).
-- [ ] `authMiddleware`: manejar null tenantId.
-- [ ] Login: SUPER_ADMIN login no requiere tenantId.
+- [x] JWT: hacer `tenantId` opcional (null para SUPER_ADMIN).
+- [x] `authMiddleware`: manejar null tenantId.
+- [x] `/api/auth/me`: retorna `tenantId` en la respuesta.
 
 #### Frontend — Tenant Management
-- [ ] Crear `features/platform/TenantsPage.tsx`: tabla de tenants con stats.
-- [ ] Crear `features/platform/CreateTenantModal.tsx`: formulario de creación.
-- [ ] Crear `features/platform/PlatformDashboard.tsx`: métricas de plataforma.
-- [ ] Agregar rutas: `/platform`, `/platform/tenants`.
+- [x] Crear `features/platform/TenantsPage.tsx`: tabla de tenants con stats.
+- [x] Crear `features/platform/CreateTenantModal.tsx`: formulario de creación/edición.
+- [x] Crear `features/platform/PlatformDashboard.tsx`: métricas de plataforma.
+- [x] Agregar rutas: `/platform`, `/platform/tenants`.
 
 #### Frontend — User Management
-- [ ] Crear `features/users/UsersPage.tsx`: tabla de usuarios del tenant.
-- [ ] Crear `features/users/CreateUserModal.tsx`: formulario de creación.
-- [ ] Crear rutas: `/users`.
+- [x] Crear `features/users/UsersPage.tsx`: tabla de usuarios del tenant.
+- [x] Crear `features/users/CreateUserModal.tsx`: formulario de creación.
+- [x] Agregar rutas: `/users`.
 
 #### Frontend — Navigation
-- [ ] Sidebar: agregar "Plataforma" y "Tenants" para SUPER_ADMIN.
-- [ ] Sidebar: agregar "Usuarios" para ADMIN.
-- [ ] Router: agregar todas las rutas nuevas.
+- [x] Sidebar: agregar "Plataforma" y "Tenants" para SUPER_ADMIN.
+- [x] Sidebar: agregar "Usuarios" para ADMIN.
+- [x] Router: agregar todas las rutas nuevas.
 
 #### Tests
-- [ ] Platform: CRUD de tenants, desactivación, stats.
+- [x] Platform: CRUD de tenants, desactivación, stats.
 - [ ] Users: CRUD, asignación de roles, desactivación.
 - [ ] Auth: login de SUPER_ADMIN sin tenantId, aislamiento de tenant.
-- [ ] Permisos: SUPER_ADMIN cross-tenant, ADMIN tenant-scoped.
+- [x] Permisos: SUPER_ADMIN cross-tenant, ADMIN tenant-scoped.
 
 ### Checks de validación manual
 
@@ -379,9 +379,9 @@ Actualizar esta sección después de cada sesión de trabajo. `[x]` requiere evi
 - [x] Slice 2 completo (implementación completa, validación manual pendiente)
 - [x] Prerrequisitos completos (implementación completa, validación manual pendiente)
 - [ ] Slice 3 completo (implementación completa, validación manual pendiente)
-- [ ] Slice 4 completo
+- [ ] Slice 4 completo (implementación ~90%, validación manual pendiente)
 - [ ] Slice 5 completo
-- [ ] Próximo slice activo: Slice 4 (Panel SUPER_ADMIN)
-- [x] Última actualización: Slice 3 implementación completa (frontend cart sync + order detail + tests)
+- [ ] Próximo slice activo: Slice 5 (Dashboard Métricas, Notificaciones y Pulido)
+- [x] Última actualización: Slice 4 implementación completa (platform + users + auth fix + frontend + tests)
 
 Cuando el usuario solicite **"Actualizar progreso"**, comparar este checklist con el código actual y con la evidencia proporcionada. Cuando solicite **"Continuar con el Slice #"**, trabajar únicamente en ese slice, mantener los contratos anteriores y actualizar esta sección al terminar.

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const createSaleSchema = z.object({
-  branchId: z.string().uuid().optional(),
+  branchId: z.string().uuid().nullish(),
   items: z.array(
     z.object({
       variantId: z.string().uuid(),

@@ -1,3 +1,4 @@
+import { requireTenantId } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { authMiddleware } from '@/middlewares/auth.middleware';
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest) {
   if (perm) return perm;
 
   try {
-    const products = await getProducts(auth.tenantId);
+    const products = await getProducts(requireTenantId(auth.tenantId));
     return NextResponse.json({ success: true, data: products });
   } catch (error) {
     return handleError(error);
@@ -37,7 +38,7 @@ export async function POST(req: NextRequest) {
   try {
       const product = await createProduct({
         ...parsed.data,
-        tenantId: auth.tenantId,
+        tenantId: requireTenantId(auth.tenantId),
         baseAttributes: parsed.data.baseAttributes as Prisma.InputJsonValue,
       });
     return NextResponse.json({ success: true, data: product }, { status: 201 });

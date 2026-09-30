@@ -1,3 +1,4 @@
+import { requireTenantId } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { authMiddleware } from '@/middlewares/auth.middleware';
 import { permissionMiddleware } from '@/middlewares/permission.middleware';
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest) {
   const perm = permissionMiddleware(auth.role, 'whatsapp_orders');
   if (perm) return perm;
 
-  const orders = await getWhatsappOrders(auth.tenantId);
+  const orders = await getWhatsappOrders(requireTenantId(auth.tenantId));
   return NextResponse.json({ success: true, data: orders });
 }
 
@@ -29,6 +30,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(parsed.error, { status: 400 });
   }
 
-  const order = await createWhatsappOrder({ ...parsed.data, tenantId: auth.tenantId });
+  const order = await createWhatsappOrder({ ...parsed.data, tenantId: requireTenantId(auth.tenantId) });
   return NextResponse.json({ success: true, data: order }, { status: 201 });
 }

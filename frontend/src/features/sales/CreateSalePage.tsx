@@ -79,7 +79,7 @@ export default function CreateSalePage() {
 
     await create.mutateAsync({
       date: new Date().toISOString(),
-      branchId: user!.branchId!,
+      ...(user!.branchId ? { branchId: user!.branchId } : {}),
       sellerId: user!.id,
       items,
       subtotal: total,
