@@ -4,15 +4,25 @@ import { TenantProvider } from '@/app/providers/TenantProvider';
 import { Header } from '@/components/header/Header';
 import { TenantProductCard } from '@/components/tenant/TenantProductCard';
 import { useCatalogProducts } from '@/hooks/useCatalog';
+import { usePublishedTenantHome } from '@/hooks/useStorefront';
 import { useTenant } from '@/hooks/useTenant';
+import { TenantHero } from '@/components/tenant/TenantHero';
+import type { TenantHomeContent } from '@/types/storefront';
 
 export function TenantHomeContent() {
   const { tenantSlug } = useParams();
   const { tenant, loading: tenantLoading, error: tenantError } = useTenant();
   const { data: products = [], isLoading, error } = useCatalogProducts();
+  const { data: publishedHome } = usePublishedTenantHome(tenant?.slug);
   const catalogPath = tenantSlug ? `/t/${tenantSlug}/catalogo` : '/catalogo';
   const publishedProducts = products.filter((product) => product.active);
   const heroProduct = publishedProducts.find((product) => product.imageUrl);
+  const heroContent: TenantHomeContent['hero'] = publishedHome?.content.hero ?? {
+    title: tenant?.name ?? '',
+    description: tenant?.description ?? 'Explorá los productos publicados por esta tienda.',
+    imageUrl: heroProduct?.imageUrl ?? null,
+    ctaLabel: 'Ver catálogo',
+  };
 
   if (tenantLoading || isLoading) {
     return (
@@ -41,49 +51,11 @@ export function TenantHomeContent() {
       <Header />
 
       <main>
-        <section className="border-b border-gray-200 bg-slate-50">
-          <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[1fr_0.9fr] lg:px-8 lg:py-16">
-            <div className="max-w-xl">
-              <p className="text-xs font-semibold uppercase text-gray-500">Tienda oficial</p>
-              <h1 className="mt-3 text-4xl font-semibold leading-tight text-gray-950 sm:text-5xl">
-                {tenant.name}
-              </h1>
-              <p className="mt-4 max-w-lg text-base leading-7 text-gray-600">
-                {tenant.description || 'Explorá los productos publicados por esta tienda.'}
-              </p>
-              <div className="mt-7 flex flex-wrap items-center gap-4">
-                <Link
-                  to={catalogPath}
-                  className="inline-flex min-h-12 items-center gap-3 bg-gray-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-gray-800"
-                >
-                  Ver catálogo
-                  <ArrowRight size={17} aria-hidden="true" />
-                </Link>
-                <span className="text-sm text-gray-500">
-                  {publishedProducts.length} productos publicados
-                </span>
-              </div>
-            </div>
+        <TenantHero content={heroContent} tenantName={tenant.name} catalogPath={catalogPath} />
 
-            <div className="relative min-h-64 overflow-hidden bg-gray-200 sm:min-h-80 lg:min-h-96">
-              {heroProduct?.imageUrl ? (
-                <img
-                  src={heroProduct.imageUrl}
-                  alt={heroProduct.name}
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
-              ) : (
-                <div className="absolute inset-0 bg-[linear-gradient(135deg,#e5e7eb_0%,#f8fafc_48%,#d1d5db_100%)]" />
-              )}
-              {heroProduct && (
-                <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/70 to-transparent px-5 pb-5 pt-16 text-white">
-                  <p className="text-xs font-medium text-white/75">En el catálogo</p>
-                  <p className="mt-1 text-lg font-semibold">{heroProduct.name}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </section>
+        <div className="mx-auto max-w-7xl px-4 pt-5 text-sm text-gray-500 sm:px-6 lg:px-8">
+          {publishedProducts.length} productos publicados
+        </div>
 
         <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
           <div className="flex items-end justify-between gap-4 border-b border-gray-200 pb-4">

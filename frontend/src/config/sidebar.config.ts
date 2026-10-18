@@ -6,6 +6,7 @@ import {
   CirclePile,
   Users,
   Settings,
+  PanelsTopLeft,
   MessageSquare,
   ClipboardList,
   Building2,
@@ -88,5 +89,11 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     path: '/dashboard/settings',
     icon: Settings,
     permission: 'tenants',
+  },
+  {
+    label: 'Portada de tienda',
+    path: '/dashboard/storefront',
+    icon: PanelsTopLeft,
+    permission: 'storefront',
   },
 ];

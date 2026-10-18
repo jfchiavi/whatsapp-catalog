@@ -128,6 +128,41 @@ Mostrar una portada propia al entrar a `/t/:slug`, con navegación clara al cat�
 - [ ] Agregar un producto al carrito desde catálogo/detalle y confirmar que el flujo sigue funcionando.
 - [ ] Confirmar que `/` continúa mostrando el marketplace global.
 
+## Slice 1.3: Gestión MVP de portada (Fase 2)
+
+### Objetivo
+
+Permitir que el ADMIN edite el rubro y el hero de su propia portada como borrador, lo previsualice y publique. La tienda pública consume únicamente la versión publicada; los tenants sin publicación conservan el fallback existente.
+
+### Checks de implementación
+
+- [x] Crear `TenantHomePage` tenant-scoped con contenido JSON draft/published, timestamps e índice único por tenant.
+- [x] Crear y aplicar migración `20261018090000_add_tenant_home_page`; restaurar aditivamente metadatos faltantes del historial legacy de `_prisma_migrations` sin resetear la base.
+- [x] Validar versión del contenido, rubro, campos del hero y URL HTTP/HTTPS con Zod.
+- [x] Crear API autenticada para obtener/guardar borrador; derivar tenant del JWT y no aceptar `tenantId` en el payload.
+- [x] Crear API de publicación que copia el draft validado a published dentro de transacción.
+- [x] Crear API pública por slug que devuelve solo contenido publicado de tenants activos.
+- [x] Agregar permiso `storefront` solo a ADMIN tenant; no habilitar administración global de tenants.
+- [x] Crear editor de rubro/hero en `/dashboard/storefront`, con guardado, preview visual y publicación.
+- [x] Renderizar en storefront el hero publicado y mantener fallback si todavía no hay publicación.
+- [x] Pruebas backend de draft privado, publicación sin mutación accidental, separación de tenants, permiso y rutas con tenant derivado del JWT (3 pruebas pasan).
+- [x] Build de backend Next.js y frontend Vite/TypeScript; lint focalizado de archivos del slice.
+- [ ] Carga/almacenamiento de imágenes propio: el MVP acepta URL HTTP/HTTPS; implementar storage gestionado en una fase posterior.
+- [ ] Agregar pruebas automatizadas del componente/editor y el recorrido de preview/publicación en navegador.
+
+### Fuera de alcance pendiente
+
+- [ ] Bloques configurables/ordenables, categorías tenant-aware, destacados curados, promociones con vigencia, beneficios editables y version history.
+- [ ] SEO configurable, métricas de conversión y preview responsive embebido.
+
+### Checks de validación manual
+
+- [ ] Login como ADMIN de Tenant A → editar rubro/hero, guardar borrador y confirmar que visitante aún ve lo publicado.
+- [ ] Previsualizar borrador y publicarlo; confirmar cambio en portada pública.
+- [ ] Intentar editar/publicar Tenant B con credenciales de Tenant A y confirmar `403`.
+- [ ] Confirmar que un tenant sin publicación sigue usando el fallback.
+- [ ] Verificar el editor y la portada con dos tenants en Docker después de reconstruir backend y frontend.
+
 ## Slice 2: Sucursales y gestión de stock
 
 ### Objetivo
@@ -409,7 +444,8 @@ Actualizar esta sección después de cada sesión de trabajo. `[x]` requiere evi
 - [ ] Slice 3 completo (implementación completa, validación manual pendiente)
 - [ ] Slice 4 completo (implementación ~90%, validación manual pendiente)
 - [ ] Slice 5 completo
-- [ ] Próximo slice activo: Slice 1.2 (Portada pública del tenant); Slice 5 queda en espera
-- [x] Última actualización: Slice 1.2 implementado parcialmente (portada, ruta de catálogo y header; build y lint focalizado correctos)
+- [ ] Slice 1.3 completo (MVP draft/publish implementado; validación manual y preview automatizada pendientes)
+- [ ] Próximo slice activo: Slice 1.3 (Gestión MVP de portada); Slice 5 queda en espera
+- [x] Última actualización: Slice 1.3 MVP implementado; migración, tests focalizados y builds frontend/backend correctos
 
 Cuando el usuario solicite **"Actualizar progreso"**, comparar este checklist con el código actual y con la evidencia proporcionada. Cuando solicite **"Continuar con el Slice #"**, trabajar únicamente en ese slice, mantener los contratos anteriores y actualizar esta sección al terminar.

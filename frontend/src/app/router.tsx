@@ -16,6 +16,7 @@ import SalesListPage from '@/features/sales/SalesListPage';
 import CreateSalePage from '@/features/sales/CreateSalePage';
 import ReportsPage from '@/features/reports/ReportsPage';
 import TenantSettingsPage from '@/features/settings/TenantSettingsPage';
+import StorefrontEditorPage from '@/features/settings/StorefrontEditorPage';
 import WhatsAppOrdersPage from '@/features/whatsapp/WhatsAppOrdersPage';
 import OrdersPage from '@/features/orders/OrdersPage';
 import OrderDetailPage from '@/features/orders/OrderDetailPage';
@@ -59,6 +60,7 @@ export const router = createBrowserRouter([
             children: [
               { index: true, lazy:async () => {return {Component: HomeDashBoard};} },
               { path: 'settings', lazy: async () => {return {Component: TenantSettingsPage }}},
+              { path: 'storefront', lazy: async () => {return {Component: StorefrontEditorPage }}},
             ],
           },
           { path: '/products', lazy: async () => {return {Component: ProductsPage}; }},

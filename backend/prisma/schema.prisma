@@ -43,10 +43,22 @@ model Tenant {
   whatsappOrders WhatsappOrder[]
   refreshTokens  RefreshToken[]
   customers      Customer[]
+  homePage       TenantHomePage?
   carts          Cart[]
   cartItems      CartItem[]
   orders         Order[]
   orderItems     OrderItem[]
+}
+
+model TenantHomePage {
+  id              String   @id @default(uuid())
+  tenantId        String   @unique
+  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  draftContent    Json
+  publishedContent Json?
+  publishedAt     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model User {

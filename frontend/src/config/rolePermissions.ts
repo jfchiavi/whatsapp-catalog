@@ -19,6 +19,7 @@ export const rolePermissions: Record<string, Permission[]> = {
     'reports',
     'users',
     'whatsapp_orders',
+    'storefront',
   ],
   BRANCH_MANAGER: [
     'dashboard',
