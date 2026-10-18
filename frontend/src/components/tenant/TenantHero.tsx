@@ -3,12 +3,13 @@ import { ArrowRight } from 'lucide-react';
 import type { TenantHomeContent } from '@/types/storefront';
 
 interface TenantHeroProps {
-  content: TenantHomeContent['hero'];
+  content: Extract<TenantHomeContent['sections'][number], { type: 'hero' }>;
   tenantName: string;
   catalogPath: string;
 }
 
 export function TenantHero({ content, tenantName, catalogPath }: TenantHeroProps) {
+  if (!content.enabled) return null;
   return (
     <section className="border-b border-gray-200 bg-slate-50">
       <div className="mx-auto grid max-w-7xl items-center gap-8 px-4 py-10 sm:px-6 sm:py-14 lg:grid-cols-[1fr_0.9fr] lg:px-8 lg:py-16">

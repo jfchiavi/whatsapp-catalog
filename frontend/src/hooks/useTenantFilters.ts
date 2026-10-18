@@ -51,9 +51,9 @@ function isProductOffer(product: Product): boolean {
   return false;
 }
 
-export function useTenantFilters(products: Product[] = []) {
+export function useTenantFilters(products: Product[] = [], initialAttributes: Record<string, string[]> = {}) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string[]>>({});
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string[]>>(initialAttributes);
   const [onlyOffers, setOnlyOffers] = useState(false);
   const [priceRange, setPriceRange] = useState<{ min?: number; max?: number }>({});
   const [sortOption, setSortOption] = useState<SortOption>('relevance');

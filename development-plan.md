@@ -143,17 +143,29 @@ Permitir que el ADMIN edite el rubro y el hero de su propia portada como borrado
 - [x] Crear API de publicación que copia el draft validado a published dentro de transacción.
 - [x] Crear API pública por slug que devuelve solo contenido publicado de tenants activos.
 - [x] Agregar permiso `storefront` solo a ADMIN tenant; no habilitar administración global de tenants.
-- [x] Crear editor de rubro/hero en `/dashboard/storefront`, con guardado, preview visual y publicación.
-- [x] Renderizar en storefront el hero publicado y mantener fallback si todavía no hay publicación.
-- [x] Pruebas backend de draft privado, publicación sin mutación accidental, separación de tenants, permiso y rutas con tenant derivado del JWT (3 pruebas pasan).
-- [x] Build de backend Next.js y frontend Vite/TypeScript; lint focalizado de archivos del slice.
+- [x] Ampliar contenido a `version: 2` con normalización transparente del contenido v1 ya existente.
+- [x] Agregar secciones ordenables y habilitables: hero, categorías basadas en facetas reales, destacados, promoción con vigencia, beneficios y contacto.
+- [x] Validar en backend que categorías y productos destacados existan y pertenezcan al tenant; rechazar destacados inactivos.
+- [x] Renderizar secciones publicadas y usar el mismo renderer en la vista previa del editor.
+- [x] Hacer que las categorías enlacen al catálogo mediante parámetros `attributeKey`/`attributeValue`.
+- [x] Guardar historial inmutable de publicaciones con número de revisión; backfill de publicación actual a revisión inicial.
+- [x] Listar historial y restaurar una versión anterior únicamente al borrador; para hacerla pública se requiere publicar.
+- [x] Pruebas focalizadas de compatibilidad v1→v2, draft/publicación, aislamiento, validación de fechas, referencias cross-tenant y restore-to-draft (5 pruebas pasan).
+- [x] Build de backend Next.js, frontend Vite/TypeScript, lint focalizado y `prisma migrate status` sincronizado.
 - [ ] Carga/almacenamiento de imágenes propio: el MVP acepta URL HTTP/HTTPS; implementar storage gestionado en una fase posterior.
-- [ ] Agregar pruebas automatizadas del componente/editor y el recorrido de preview/publicación en navegador.
+- [ ] Agregar pruebas automatizadas del componente/editor y el recorrido end-to-end de preview/publicación en navegador.
 
 ### Fuera de alcance pendiente
 
-- [ ] Bloques configurables/ordenables, categorías tenant-aware, destacados curados, promociones con vigencia, beneficios editables y version history.
-- [ ] SEO configurable, métricas de conversión y preview responsive embebido.
+- [ ] Carga de archivos e integración con almacenamiento gestionado/CDN.
+- [ ] Taxonomía explícita de categorías propia del tenant (las categorías actuales son enlaces basados en facetas verificadas de productos).
+
+## Trabajo final del sistema (posterior a los slices funcionales)
+
+No es requisito de la etapa actual. Abordar cuando catálogo, pedidos, administración y storefront estén funcionalmente completos y validados.
+
+- [ ] SEO configurable por tenant: title, description, imagen social, canonical y datos estructurados.
+- [ ] Métricas de conversión: clics en categorías/secciones, productos, catálogo y WhatsApp; definir consentimiento, retención y aislamiento antes de recopilar datos.
 
 ### Checks de validación manual
 
@@ -444,8 +456,8 @@ Actualizar esta sección después de cada sesión de trabajo. `[x]` requiere evi
 - [ ] Slice 3 completo (implementación completa, validación manual pendiente)
 - [ ] Slice 4 completo (implementación ~90%, validación manual pendiente)
 - [ ] Slice 5 completo
-- [ ] Slice 1.3 completo (MVP draft/publish implementado; validación manual y preview automatizada pendientes)
-- [ ] Próximo slice activo: Slice 1.3 (Gestión MVP de portada); Slice 5 queda en espera
-- [x] Última actualización: Slice 1.3 MVP implementado; migración, tests focalizados y builds frontend/backend correctos
+- [ ] Slice 1.3 completo (gestor ampliado implementado; validación manual actualizada y pruebas frontend E2E pendientes)
+- [ ] Próximo slice activo: validar manualmente Slice 1.3 y continuar slices funcionales pendientes; SEO/métricas reservados para el tramo final del sistema
+- [x] Última actualización: Slice 1.3 ampliado con secciones e historial; migraciones, tests backend y builds frontend/backend correctos
 
 Cuando el usuario solicite **"Actualizar progreso"**, comparar este checklist con el código actual y con la evidencia proporcionada. Cuando solicite **"Continuar con el Slice #"**, trabajar únicamente en ese slice, mantener los contratos anteriores y actualizar esta sección al terminar.

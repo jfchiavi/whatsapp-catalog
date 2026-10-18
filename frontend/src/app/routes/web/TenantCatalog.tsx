@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal, ArrowUpDown } from 'lucide-react';
 import { TenantProvider } from '@/app/providers/TenantProvider';
 import { useTenant } from '@/hooks/useTenant';
@@ -12,6 +12,7 @@ import { Header } from '@/components/header/Header';
 
 function TenantCatalogContent() {
   const { tenantSlug } = useParams();
+  const [searchParams] = useSearchParams();
   const { tenant, loading: tenantLoading, error: tenantError } = useTenant();
   const { data: rawProducts, isLoading, error } = useCatalogProducts();
   const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
@@ -36,7 +37,12 @@ function TenantCatalogContent() {
     setSortOption,
     toggleAttributeValue,
     clearAllFilters,
-  } = useTenantFilters(rawProducts || []);
+  } = useTenantFilters(
+    rawProducts || [],
+    searchParams.get('attributeKey') && searchParams.get('attributeValue')
+      ? { [searchParams.get('attributeKey')!]: [searchParams.get('attributeValue')!] }
+      : {}
+  );
 
   if (tenantLoading) {
     return (
@@ -210,10 +216,11 @@ function TenantCatalogContent() {
 
 export default function TenantCatalog() {
   const { tenantSlug } = useParams();
+  const [searchParams] = useSearchParams();
 
   return (
     <TenantProvider slug={tenantSlug}>
-      <TenantCatalogContent />
+      <TenantCatalogContent key={searchParams.toString()} />
     </TenantProvider>
   );
 }

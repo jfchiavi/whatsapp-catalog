@@ -1,12 +1,12 @@
-import { Link, useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { TenantProvider } from '@/app/providers/TenantProvider';
 import { Header } from '@/components/header/Header';
 import { TenantProductCard } from '@/components/tenant/TenantProductCard';
+import { TenantHomeSections } from '@/components/tenant/TenantHomeSections';
 import { useCatalogProducts } from '@/hooks/useCatalog';
 import { usePublishedTenantHome } from '@/hooks/useStorefront';
 import { useTenant } from '@/hooks/useTenant';
-import { TenantHero } from '@/components/tenant/TenantHero';
 import type { TenantHomeContent } from '@/types/storefront';
 
 export function TenantHomeContent() {
@@ -17,12 +17,16 @@ export function TenantHomeContent() {
   const catalogPath = tenantSlug ? `/t/${tenantSlug}/catalogo` : '/catalogo';
   const publishedProducts = products.filter((product) => product.active);
   const heroProduct = publishedProducts.find((product) => product.imageUrl);
-  const heroContent: TenantHomeContent['hero'] = publishedHome?.content.hero ?? {
+  const fallbackHero: Extract<TenantHomeContent['sections'][number], { type: 'hero' }> = {
+    id: 'hero-fallback',
+    type: 'hero',
+    enabled: true,
     title: tenant?.name ?? '',
     description: tenant?.description ?? 'Explorá los productos publicados por esta tienda.',
     imageUrl: heroProduct?.imageUrl ?? null,
     ctaLabel: 'Ver catálogo',
   };
+  const sections = publishedHome?.content.sections ?? [fallbackHero];
 
   if (tenantLoading || isLoading) {
     return (
@@ -51,13 +55,19 @@ export function TenantHomeContent() {
       <Header />
 
       <main>
-        <TenantHero content={heroContent} tenantName={tenant.name} catalogPath={catalogPath} />
+        <TenantHomeSections
+          sections={sections}
+          tenantName={tenant.name}
+          tenantSlug={tenantSlug}
+          whatsappNumber={tenant.whatsappNumber}
+          products={publishedProducts}
+        />
 
         <div className="mx-auto max-w-7xl px-4 pt-5 text-sm text-gray-500 sm:px-6 lg:px-8">
           {publishedProducts.length} productos publicados
         </div>
 
-        <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+        {!sections.some((section) => section.type === 'featuredProducts' && section.enabled) && <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
           <div className="flex items-end justify-between gap-4 border-b border-gray-200 pb-4">
             <div>
               <p className="text-xs font-semibold uppercase text-gray-500">Explorá la tienda</p>
@@ -95,7 +105,7 @@ export function TenantHomeContent() {
             Ir al catálogo
             <ArrowRight size={16} aria-hidden="true" />
           </Link>
-        </section>
+        </section>}
       </main>
 
       <footer className="border-t border-gray-200 bg-slate-50">

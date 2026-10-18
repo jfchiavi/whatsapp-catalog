@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getPublishedTenantHome,
+  getTenantHomePublicationHistory,
   getTenantHomeDraft,
   publishTenantHomeDraft,
+  restoreTenantHomePublication,
   saveTenantHomeDraft,
 } from '@/services/storefront.api';
 import type { TenantHomeContent } from '@/types/storefront';
@@ -16,6 +18,11 @@ export const usePublishedTenantHome = (slug?: string) => useQuery({
   queryKey: ['storefront-published', slug],
   queryFn: () => getPublishedTenantHome(slug!),
   enabled: Boolean(slug),
+});
+
+export const useTenantHomePublicationHistory = () => useQuery({
+  queryKey: ['storefront-history'],
+  queryFn: getTenantHomePublicationHistory,
 });
 
 export const useSaveTenantHomeDraft = () => {
@@ -33,6 +40,15 @@ export const usePublishTenantHomeDraft = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['storefront-draft'] });
       queryClient.invalidateQueries({ queryKey: ['storefront-published'] });
+      queryClient.invalidateQueries({ queryKey: ['storefront-history'] });
     },
+  });
+};
+
+export const useRestoreTenantHomePublication = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: restoreTenantHomePublication,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['storefront-draft'] }),
   });
 };

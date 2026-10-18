@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     const page = await publishTenantHomeDraft(auth.tenantId);
     return NextResponse.json({
       success: true,
-      data: { publishedAt: page.publishedAt, publishedContent: page.publishedContent },
+      data: { publishedAt: page.publishedAt, revision: page.revision, publishedContent: page.publishedContent },
     });
   } catch (error) {
     return handleError(error);

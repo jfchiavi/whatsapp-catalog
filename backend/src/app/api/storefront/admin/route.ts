@@ -39,6 +39,7 @@ export async function GET(req: NextRequest) {
         tenant: tenantConfig,
         draftContent,
         publishedAt: page.publishedAt,
+        revision: page.revision,
         hasPublishedContent: page.publishedContent !== null,
       },
     });
