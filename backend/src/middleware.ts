@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const ALLOWED_ORIGINS = [
   process.env.FRONTEND_URL || 'http://localhost:5173',
+  'http://127.0.0.1:5173',
   //'http://localhost:3001', // otro front si existe
 ];
 
@@ -20,15 +21,20 @@ export function middleware(req: NextRequest) {
 
   // Preflight request
   if (req.method === 'OPTIONS') {
+    const headers = new Headers({
+      'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+      'Access-Control-Allow-Headers':
+        'Content-Type, Authorization, X-Tenant-ID',
+      'Access-Control-Allow-Credentials': 'true',
+    });
+
+    if (origin && ALLOWED_ORIGINS.includes(origin)) {
+      headers.set('Access-Control-Allow-Origin', origin);
+    }
+
     return new NextResponse(null, {
       status: 204,
-      headers: {
-        'Access-Control-Allow-Origin': origin ?? '*',
-        'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
-        'Access-Control-Allow-Headers':
-          'Content-Type, Authorization, X-Tenant-ID',
-        'Access-Control-Allow-Credentials': 'true',
-      },
+      headers,
     });
   }
 

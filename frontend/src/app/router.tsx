@@ -2,9 +2,10 @@ import { createBrowserRouter } from "react-router-dom";
 import Home from "./routes/web/Home";
 import ProductDetail from "./routes/web/ProductDetail";
 import SearchResults from "./routes/web/SearchResults";
+import TenantHome from "./routes/web/TenantHome";
+import TenantDomainHome from "./routes/web/TenantDomainHome";
 import TenantCatalog from "./routes/web/TenantCatalog";
 import TenantProductDetail from "./routes/web/TenantProductDetail";
-import Marketplace from "./routes/web/Marketplace";
 import { DashboardLayout } from '@/components/dashboard/layout/DashboardLayout';
 import { ProtectedRoute } from '@/components/dashboard/auth/ProtectedRoute';
 import LoginPage  from '@/features/auth/LoginPage';
@@ -25,10 +26,13 @@ import ErrorPage from '@/components/dashboard/layout/ErrorPage';
 
 export const router = createBrowserRouter([
   // Marketplace global (dominio raíz)
-  { path: "/", element: <Marketplace /> },
+  { path: "/", element: <TenantDomainHome /> },
+  { path: "/catalogo", element: <TenantCatalog /> },
+  { path: "/product/:id", element: <TenantProductDetail /> },
 
-  // Catálogo por tenant (subdominio o dominio custom)
-  { path: "/t/:tenantSlug", element: <TenantCatalog /> },
+  // Tienda por tenant
+  { path: "/t/:tenantSlug", element: <TenantHome /> },
+  { path: "/t/:tenantSlug/catalogo", element: <TenantCatalog /> },
   { path: "/t/:tenantSlug/product/:id", element: <TenantProductDetail /> },
 
   // Legacy routes (mantener compatibilidad)

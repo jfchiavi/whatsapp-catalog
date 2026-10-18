@@ -25,11 +25,12 @@ const ATTRIBUTE_LABELS: Record<string, string> = {
 };
 
 function TenantProductDetailContent() {
-  const { id } = useParams();
+  const { id, tenantSlug } = useParams();
   const { tenant, loading: tenantLoading } = useTenant();
   const { data: product, isLoading, error } = useCatalogProduct(id || '');
   const [qty, setQty] = useState(1);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+  const catalogPath = tenantSlug ? `/t/${tenantSlug}/catalogo` : '/catalogo';
 
   if (tenantLoading || isLoading) {
     return (
@@ -60,10 +61,10 @@ function TenantProductDetailContent() {
           <p className="font-semibold text-gray-800 mb-1">Producto no encontrado</p>
           <p className="text-sm text-gray-500 mb-4">El producto solicitado no existe o fue despublicado.</p>
           <Link
-            to={`/t/${tenant?.slug}`}
+            to={catalogPath}
             className="inline-block px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-black transition"
           >
-            Volver al catálogo
+            Ir al catálogo
           </Link>
         </div>
       </div>
@@ -96,10 +97,10 @@ function TenantProductDetailContent() {
         {/* Breadcrumb de navegación */}
         <nav className="mb-6">
           <Link
-            to={`/t/${tenant?.slug}`}
+            to={catalogPath}
             className="text-sm font-medium text-gray-500 hover:text-gray-900 transition flex items-center gap-1.5"
           >
-            ← Volver a {tenant?.name}
+            ← Volver al catálogo
           </Link>
         </nav>
 

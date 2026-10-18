@@ -83,7 +83,7 @@ Páginas de catálogo por tenant con configuración independiente, marketplace g
 - [x] API `PUT /api/tenants/:id/config` — actualizar config (SUPER_ADMIN)
 - [x] TenantProvider — detecta tenant desde dominio/subdominio/ruta
 - [x] useTenant hook — retorna config del tenant
-- [x] Rutas: `/t/:slug` (catálogo), `/t/:slug/product/:id` (detalle), `/` (marketplace)
+- [x] Rutas públicas iniciales de tenant y marketplace; separación por intención de ruta/domain detallada en Slice 1.2
 - [x] Cart store: aislamiento por tenant + deduplicación de items
 - [x] CartItem.tsx: fix campos `imageUrl` y `variant.price`
 - [x] WhatsApp: usa `whatsappNumber` del tenant
@@ -100,6 +100,33 @@ Páginas de catálogo por tenant con configuración independiente, marketplace g
 - [ ] Verificar que el cambio se refleja en `http://localhost/t/demo`
 - [ ] Login como `seller@demo.com` → verificar que NO ve el link de Configuración
 - [ ] Agregar producto al carrito en Demo Tenant → cambiar a Fashion Tenant → carrito vacío
+
+## Slice 1.2: Portada pública del tenant
+
+### Objetivo
+
+Mostrar una portada propia al entrar a `/t/:slug`, con navegación clara al catálogo, conservando marketplace, detalle de producto y flujo actual del carrito. Esta primera fase usa únicamente la configuración y los productos públicos existentes; no incluye CMS ni contenido editorial inventado.
+
+### Checks de implementación
+
+- [x] Mover el catálogo existente a `/t/:slug/catalogo` sin rehacer su búsqueda, filtros ni tarjetas.
+- [x] Crear portada pública para `/t/:slug` con identidad del tenant, descripción disponible, conteo de productos activos y CTA al catálogo.
+- [x] Mostrar hasta tres productos reales del tenant en la portada, con estado de error/vacío y componentes de tarjeta existentes.
+- [x] Actualizar el header público con marca y navegación Inicio/Catálogo cuando se está dentro de un tenant.
+- [x] Mantener `/` como marketplace y conservar `/t/:slug/product/:id`.
+- [x] Resolver `/` como portada cuando el host corresponde a un tenant y como marketplace cuando no se resuelve tenant; en dominio tenant, usar `/catalogo` y `/product/:id`.
+- [x] Actualizar el retorno desde el detalle para volver al catálogo.
+- [ ] Agregar pruebas automatizadas de rutas y navegación tenant; el frontend no tiene actualmente una suite de pruebas configurada.
+- [x] Validación estática: `cd frontend && npm run build` y ESLint focalizado de los archivos modificados.
+
+### Checks de validación manual
+
+- [ ] Abrir `/t/demo` y confirmar que aparece la portada, no la grilla del catálogo.
+- [ ] Abrir `/t/demo/catalogo` y comprobar búsqueda, filtros, ordenamiento y acceso a productos.
+- [ ] Abrir un detalle desde catálogo y confirmar que el retorno lleva a `/t/demo/catalogo`.
+- [ ] Repetir con dos tenants y comprobar que marca y productos no se mezclan.
+- [ ] Agregar un producto al carrito desde catálogo/detalle y confirmar que el flujo sigue funcionando.
+- [ ] Confirmar que `/` continúa mostrando el marketplace global.
 
 ## Slice 2: Sucursales y gestión de stock
 
@@ -376,12 +403,13 @@ Actualizar esta sección después de cada sesión de trabajo. `[x]` requiere evi
 - [ ] Slice 0 completo
 - [ ] Slice 1 completo (implementación completa, validación manual pendiente)
 - [ ] Slice 1.1 completo (implementación completa, validación manual pendiente)
+- [ ] Slice 1.2 completo (portada y navegación implementadas; pruebas automatizadas y validación manual pendientes)
 - [x] Slice 2 completo (implementación completa, validación manual pendiente)
 - [x] Prerrequisitos completos (implementación completa, validación manual pendiente)
 - [ ] Slice 3 completo (implementación completa, validación manual pendiente)
 - [ ] Slice 4 completo (implementación ~90%, validación manual pendiente)
 - [ ] Slice 5 completo
-- [ ] Próximo slice activo: Slice 5 (Dashboard Métricas, Notificaciones y Pulido)
-- [x] Última actualización: Slice 4 implementación completa (platform + users + auth fix + frontend + tests)
+- [ ] Próximo slice activo: Slice 1.2 (Portada pública del tenant); Slice 5 queda en espera
+- [x] Última actualización: Slice 1.2 implementado parcialmente (portada, ruta de catálogo y header; build y lint focalizado correctos)
 
 Cuando el usuario solicite **"Actualizar progreso"**, comparar este checklist con el código actual y con la evidencia proporcionada. Cuando solicite **"Continuar con el Slice #"**, trabajar únicamente en ese slice, mantener los contratos anteriores y actualizar esta sección al terminar.
