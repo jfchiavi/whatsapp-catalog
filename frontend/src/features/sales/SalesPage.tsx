@@ -6,18 +6,11 @@ export default function SalesPage() {
     const { create } = useSales();
 
     const handleSale = async () => {
-        const sale: any = {
-            date: new Date().toISOString(),
+        const sale = {
             branchId: SEED_IDS.branchCentral,
-            sellerId: SEED_IDS.userSeller,
             items: [
-                { variantId: SEED_IDS.variantTshirtRedM, name: 'Remera Oversize', quantity: 1, price: 8500 },
+                { variantId: SEED_IDS.variantTshirtRedM, quantity: 1 },
             ],
-            subtotal: 8500,
-            discount: 0,
-            total: 8500,
-            paymentMethod: 'cash',
-            status: 'completed',
         };
 
         const saved = await create.mutateAsync(sale);

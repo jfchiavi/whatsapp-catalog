@@ -338,13 +338,12 @@ INSERT INTO "StockMovement" (id, "variantId", "fromBranchId", "toBranchId", quan
 ON CONFLICT (id) DO NOTHING;
 
 -- 5. Sample WhatsApp Orders
-INSERT INTO "WhatsappOrder" (id, "customerName", "customerPhone", message, status, total, "tenantId", "createdAt", "updatedAt") VALUES
-  ('eb0d121e-36b5-59e5-9de7-781b0580ad31', 'Rodrigo Fernández', '+59172981234', 'Hola Athelnova! Quisiera cotizar 40 m² de Porcelanato Vitrificado Volcan Dorado y perfiles.', 'pending', 6400, '6b3d124c-5abc-5e0e-9c59-d8e35f8750d5', NOW(), NOW()),
-  ('5719bd18-74b6-52fb-b7eb-8a062dc1051c', 'Camila Benítez', '+59171829384', 'Buenas tardes, tienen disponibilidad de 60 m² de Piso Vinílico SPC 4mm Roble Natural?', 'contacted', 7200, '6b3d124c-5abc-5e0e-9c59-d8e35f8750d5', NOW(), NOW())
+INSERT INTO "WhatsappOrder" (id, "customerName", "customerPhone", message, status, total, "tenantId", "createdAt") VALUES
+  ('eb0d121e-36b5-59e5-9de7-781b0580ad31', 'Rodrigo Fernández', '+59172981234', 'Hola Athelnova! Quisiera cotizar 40 m² de Porcelanato Vitrificado Volcan Dorado y perfiles.', 'pending', 6400, '6b3d124c-5abc-5e0e-9c59-d8e35f8750d5', NOW()),
+  ('5719bd18-74b6-52fb-b7eb-8a062dc1051c', 'Camila Benítez', '+59171829384', 'Buenas tardes, tienen disponibilidad de 60 m² de Piso Vinílico SPC 4mm Roble Natural?', 'contacted', 7200, '6b3d124c-5abc-5e0e-9c59-d8e35f8750d5', NOW())
 ON CONFLICT (id) DO UPDATE SET
   status = EXCLUDED.status,
-  total = EXCLUDED.total,
-  "updatedAt" = NOW();
+  total = EXCLUDED.total;
 
 -- 6. Refresh Token
 INSERT INTO "RefreshToken" (id, token, "userId", "expiresAt", "tenantId", "createdAt") VALUES

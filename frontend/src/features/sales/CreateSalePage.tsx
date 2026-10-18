@@ -78,15 +78,11 @@ export default function CreateSalePage() {
     if (items.length === 0) return;
 
     await create.mutateAsync({
-      date: new Date().toISOString(),
       ...(user!.branchId ? { branchId: user!.branchId } : {}),
-      sellerId: user!.id,
-      items,
-      subtotal: total,
-      discount: 0,
-      total,
-      paymentMethod: 'cash',
-      status: 'completed',
+      items: items.map((item) => ({
+        variantId: item.variantId,
+        quantity: item.quantity,
+      })),
     });
 
     navigate('/sales');

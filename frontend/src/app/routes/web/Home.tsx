@@ -1,3 +1,4 @@
+//src/routes/web/Home.tsx
 import { useCatalogProducts } from "@/hooks/useCatalog";
 import { ProductCard } from "@/components/product/ProductCard";
 import { Header } from "@/components/header/Header";

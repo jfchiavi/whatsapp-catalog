@@ -26,11 +26,9 @@ export interface Sale {
 }
 
 export type CreateSaleBody = {
+  branchId?: string | null;
   items: Array<{
-    productId: string;
+    variantId: string;
     quantity: number;
-    price: number;
   }>;
-  total: number;
-  branchId: string;
 };

@@ -1,15 +1,27 @@
 import { api } from './api';
-import type { Sale } from '@/types/sales';
+import type { CreateSaleBody, Sale } from '@/types/sales';
 
 
-export const createSale = async (sale: Omit<Sale, 'id'>): Promise<Sale> => {
+export const createSale = async (sale: CreateSaleBody): Promise<Sale> => {
     if (import.meta.env.VITE_USE_MOCKS === 'true') {
         return {
-            ...sale,
             id: `sale-${Date.now()}`,
-        } as Sale;
+            createdAt: new Date().toISOString(),
+            branchId: sale.branchId ?? null,
+            userId: 'mock-user',
+            items: sale.items.map((item) => ({
+                productId: item.variantId,
+                name: item.variantId,
+                quantity: item.quantity,
+                price: 0,
+            })),
+            subtotal: 0,
+            discount: 0,
+            total: 0,
+            paymentMethod: 'cash',
+            status: 'completed',
+        };
     }
-    console.log('FRONT: Creating sale:', sale);
     const { data } = await api.post('/sales', sale);
     return data;
 };
