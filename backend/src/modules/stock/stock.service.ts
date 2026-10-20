@@ -1,5 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import { AppError } from '@/lib/errors';
+import { checkLowStock } from '@/modules/notifications/notifications.service';
+
+const notifyLowStock = (tenantId: string) => checkLowStock(tenantId).catch(() => undefined);
 
 export const getStockByVariant = async (variantId: string, tenantId: string) => {
   return prisma.stock.findMany({
@@ -55,7 +58,7 @@ export const adjustStock = async (
     throw new AppError('Branch not found', 404, 'NOT_FOUND');
   }
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const stock = await tx.stock.upsert({
       where: {
         tenantId_variantId_branchId: { tenantId, variantId, branchId },
@@ -83,6 +86,9 @@ export const adjustStock = async (
 
     return stock;
   });
+
+  await notifyLowStock(tenantId);
+  return result;
 };
 
 export const transferStock = async (
@@ -118,7 +124,7 @@ export const transferStock = async (
     throw new AppError('Destination branch not found', 404, 'NOT_FOUND');
   }
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const fromStock = await tx.stock.findUnique({
       where: {
         tenantId_variantId_branchId: { tenantId, variantId, branchId: fromBranchId },
@@ -151,6 +157,9 @@ export const transferStock = async (
 
     return movement;
   });
+
+  await notifyLowStock(tenantId);
+  return result;
 };
 
 export const receiveTransfer = async (
@@ -182,7 +191,7 @@ export const receiveTransfer = async (
 
   const toBranchId = movement.toBranchId!;
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     await tx.stock.upsert({
       where: {
         tenantId_variantId_branchId: {
@@ -210,6 +219,9 @@ export const receiveTransfer = async (
 
     return updated;
   });
+
+  await notifyLowStock(tenantId);
+  return result;
 };
 
 export const cancelTransfer = async (

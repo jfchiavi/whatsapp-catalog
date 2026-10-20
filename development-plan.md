@@ -412,64 +412,80 @@ Dashboard completo con métricas, alertas, import/export, descuentos, auditoría
 ### Checks de implementación
 
 #### Schema
-- [ ] Crear modelo `AuditLog` (tenantId, userId, action, entity, entityId, changes JSONB, createdAt).
-- [ ] Crear modelo `Notification` (tenantId, userId, type, title, message, read, createdAt).
-- [ ] Crear modelo `Discount` (tenantId, name, type, value, variantId?, productId?, active, startDate, endDate).
-- [ ] Crear modelo `Customer` (tenantId, name, phone, email, notes).
-- [ ] Agregar `customerId` a `Order`.
+- [x] Crear modelo `AuditLog` (tenantId, userId, action, entity, entityId, changes JSONB, createdAt) — migración `20261020120000_add_audit_notification_discount`.
+- [x] Crear modelo `Notification` (tenantId, userId, type, title, message, read, createdAt) — enum `NotificationType`.
+- [x] Crear modelo `Discount` (tenantId, name, type, value, variantId?, productId?, active, startDate, endDate) — enum `DiscountType`.
+- [x] Modelo `Customer` (tenantId, name, phone, email, notes) — ya existía desde Slice 3 (`@@unique([tenantId, phone])`).
+- [x] `customerId` en `Order` — ya existía desde Slice 3 y ahora se setea en `submitCart` vía `findOrCreateCustomer`.
 
 #### Backend — Audit Trail
-- [ ] Crear servicio `audit.service.ts`: `logAction`, `getAuditLogs` con paginación y filtros.
-- [ ] Crear middleware `auditMiddleware` que registre create/update/delete automáticamente.
+- [x] Servicio `audit.service.ts`: `logAction`, `getAuditLogs` con paginación y filtros (entity, action, userId, entityId, rango de fechas) y `redactSensitive` (enmascara password/token).
+- [x] Middleware `auditMiddleware` (`src/middlewares/audit.middleware.ts`) que registra create/update/delete automáticamente en `AuditLog` desde el handler de la ruta; aplicado a products, variants, users, discounts e import.
+- [x] Ruta `GET /api/audit` con permiso `audit` y contrato `success/data/meta`.
 
 #### Backend — Notifications
-- [ ] Crear servicio `notifications.service.ts`: `checkLowStock`, `createNotification`, `getNotifications`, `markAsRead`, `markAllAsRead`.
-- [ ] Crear rutas: `GET /api/notifications`, `PATCH /api/notifications/:id/read`, `PATCH /api/notifications/read-all`.
-- [ ] Integrar `checkLowStock` como job periódico o trigger post-ajuste.
+- [x] Servicio `notifications.service.ts`: `checkLowStock`, `createNotification`, `getNotifications`, `markAsRead`, `markAllAsRead` (con dedupe de alertas LOW_STOCK sin leer).
+- [x] Rutas: `GET /api/notifications`, `PATCH /api/notifications/:id/read`, `PATCH /api/notifications/read-all`.
+- [x] `checkLowStock` integrado como trigger post-ajuste (`adjustStock`), transferencia (`transferStock`/`receiveTransfer`) e importación de stock; umbral configurable con `LOW_STOCK_THRESHOLD` (default 5).
 
 #### Backend — Discounts
-- [ ] Crear servicio `discounts.service.ts`: `getDiscounts`, `createDiscount`, `updateDiscount`, `deleteDiscount`, `applyDiscounts`.
-- [ ] Crear rutas: `GET /api/discounts`, `POST /api/discounts`, `PUT /api/discounts/:id`, `DELETE /api/discounts/:id`.
-- [ ] Integrar descuentos en el flujo de cart/order.
+- [x] Servicio `discounts.service.ts`: `getDiscounts`, `createDiscount`, `updateDiscount`, `deleteDiscount`, `applyDiscounts`, `getCartPricing` (mejor descuento por ítem: scope variante > producto > tenant).
+- [x] Rutas: `GET /api/discounts`, `POST /api/discounts`, `GET/PUT/DELETE /api/discounts/:id` con validación de scope cross-tenant, porcentaje ≤ 100 y rango de fechas.
+- [x] Descuentos integrados en cart/order: `GET /api/carts/:id` incluye `pricing` (subtotal/descuento/total), `submitCart` aplica `applyDiscounts` en los snapshots de precio y muestra los descuentos en el mensaje WhatsApp.
 
 #### Backend — Customers
-- [ ] Crear servicio `customers.service.ts`: `getCustomers`, `getCustomerById`, `findOrCreateCustomer`, `getCustomerOrders`.
-- [ ] Crear rutas: `GET /api/customers`, `GET /api/customers/:id`, `GET /api/customers/:id/orders`.
+- [x] Servicio `customers.service.ts`: `getCustomers` (búsqueda por nombre/teléfono/email), `getCustomerById`, `findOrCreateCustomer` (upsert por `(tenantId, phone)`), `getCustomerOrders`.
+- [x] Rutas: `GET /api/customers`, `GET /api/customers/:id`, `GET /api/customers/:id/orders` (permiso `customers`).
 
 #### Backend — Import/Export
-- [ ] Crear servicio `import.service.ts`: `parseCSV`, `importProducts`, `importStock`, `exportProducts`, `exportSales`.
-- [ ] Crear rutas: `POST /api/import/products`, `POST /api/import/stock`, `GET /api/export/products`, `GET /api/export/sales`.
+- [x] Servicio `import-export.service.ts`: `parseCSV` (campos entrecomillados), `toCSV`, `importProducts`, `importStock`, `exportProducts`, `exportSales`.
+- [x] Rutas: `POST /api/import/products`, `POST /api/import/stock`, `GET /api/export/products`, `GET /api/export/sales` (respuesta `text/csv` con attachment).
 
 #### Frontend — Dashboard
-- [ ] Reescribir `features/dashboard/DashboardPage.tsx`: tarjetas de resumen, gráficos de ventas, top productos, comparación de sucursales, pedidos recientes, alertas de stock bajo.
+- [x] Dashboard reescrito (implementado en `features/dashboard/Home.tsx`, la página existente de `/dashboard`): tarjetas de resumen 7/30 días, gráfico de ventas diarias, top productos, comparación de sucursales, pedidos recientes y alertas de stock bajo.
 
 #### Frontend — Notifications
-- [ ] Crear `components/notifications/NotificationBell.tsx`: ícono con badge de no leídas, dropdown.
-- [ ] Crear `features/notifications/NotificationsPage.tsx`: lista completa con filtros.
+- [x] `components/notifications/NotificationBell.tsx`: ícono con badge de no leídas y dropdown, integrado en `Topbar`.
+- [x] `features/notifications/NotificationsPage.tsx`: lista completa con filtros por tipo y solo no leídas.
 
 #### Frontend — Discounts
-- [ ] Crear `features/discounts/DiscountsPage.tsx`: tabla de reglas de descuento.
-- [ ] Crear `features/discounts/CreateDiscountModal.tsx`: formulario.
+- [x] `features/discounts/DiscountsPage.tsx`: tabla de reglas con activar/desactivar y eliminar.
+- [x] `features/discounts/CreateDiscountModal.tsx`: formulario con scope producto/variante y vigencia.
 
 #### Frontend — Customers
-- [ ] Crear `features/customers/CustomersPage.tsx`: tabla con historial.
-- [ ] Crear `features/customers/CustomerDetailPage.tsx`: detalle con pedidos.
+- [x] `features/customers/CustomersPage.tsx`: tabla con búsqueda por nombre/teléfono/email.
+- [x] `features/customers/CustomerDetailPage.tsx`: detalle con historial de pedidos.
 
 #### Frontend — Import/Export
-- [ ] Crear `features/import/ImportPage.tsx`: upload de CSV, preview, confirmación.
-- [ ] Agregar botones "Exportar CSV" en páginas de productos y ventas.
+- [x] `features/import/ImportPage.tsx`: upload de CSV de productos y stock con resumen de resultado (creados/actualizados/errores por fila).
+- [x] Botones "Exportar CSV" en páginas de productos y ventas (visibles con permiso `import_export`).
 
 #### Frontend — Navigation
-- [ ] Sidebar: agregar "Descuentos", "Clientes", "Importar/Exportar".
-- [ ] Router: agregar todas las rutas nuevas.
+- [x] Sidebar: agregar "Descuentos", "Clientes", "Notificaciones", "Importar/Exportar".
+- [x] Router: agregar todas las rutas nuevas (`/discounts`, `/customers`, `/customers/:id`, `/notifications`, `/import`).
+- [x] `CartSummary` muestra subtotal, descuento aplicado y total desde el `pricing` del server cart.
 
 #### Tests
-- [ ] Audit: creación de logs, filtrado, paginación.
-- [ ] Notifications: detección de stock bajo, read/unread, bulk mark.
-- [ ] Discounts: CRUD, percentage/fixed, rango de fechas, scope product/variant.
-- [ ] Customers: creación, upsert, historial de pedidos.
-- [ ] Import: parsing de CSV, creación bulk de productos, ajuste de stock.
-- [ ] Export: generación de CSV, precisión de datos.
+- [x] Audit: creación de logs, filtrado, paginación, redacción de secretos y registro automático vía middleware (`tests/audit.test.ts`).
+- [x] Notifications: detección de stock bajo con dedupe, read/unread, bulk mark, aislamiento (`tests/notifications.test.ts`).
+- [x] Discounts: validaciones, percentage/fixed, rango de fechas, scope product/variante, aislamiento (`tests/discounts.test.ts`).
+- [x] Customers: creación/upsert por teléfono, búsqueda, historial de pedidos, aislamiento (`tests/customers.test.ts`).
+- [x] Import: parsing de CSV, creación bulk de productos, update por SKU duplicado, ajuste de stock (`tests/import-export.test.ts`).
+- [x] Export: generación de CSV de productos y ventas con precisión de datos (`tests/import-export.test.ts`).
+
+### Verificación ejecutada
+
+- `npx vitest run` en backend: 11 archivos, 81 pruebas pasan (incluye 21 nuevas del slice).
+- `npx tsc --noEmit` en backend sin errores; `npm run build` de Next.js compila y pasa el type check de rutas.
+- `npm run build` de frontend (Vite) correcto; ESLint focalizado de archivos nuevos/modificados sin errores.
+- `npx prisma migrate status`: 7 migraciones, base sincronizada.
+- [ ] Validación manual en Docker pendiente (checks siguientes).
+
+### Pendiente / fuera de alcance de esta fase
+
+- [ ] UI de visualización del audit trail (`GET /api/audit` existe; no se pidió panel en el plan).
+- [ ] Extender `auditMiddleware` a rutas de stock/branches/orders (los movimientos de stock ya tienen su propio historial en `StockMovement`).
+- [ ] Rate limiting en el endpoint público de métricas de storefront (arrastre de Slice 1.4).
 
 ### Checks de validación manual
 
@@ -496,10 +512,10 @@ Actualizar esta sección después de cada sesión de trabajo. `[x]` requiere evi
 - [x] Prerrequisitos completos (implementación completa, validación manual pendiente)
 - [ ] Slice 3 completo (implementación completa, validación manual pendiente)
 - [ ] Slice 4 completo (implementación ~90%, validación manual pendiente)
-- [ ] Slice 5 completo
+- [ ] Slice 5 completo (implementación completa: schema, backend, frontend y 21 pruebas nuevas; validación manual pendiente)
 - [ ] Slice 1.3 completo (gestor ampliado implementado; validación manual actualizada y pruebas frontend E2E pendientes)
 - [ ] Slice 1.4 completo (métricas básicas implementadas; pruebas manuales en Docker pendientes)
-- [ ] Próximo slice activo: validar Slice 1.4 en Docker y continuar slices funcionales; SEO y analítica avanzada quedan para el tramo final
-- [x] Última actualización: Slice 1.4 métricas básicas agregado; migración, tests y builds implementados
+- [ ] Próximo slice activo: validar Slice 5 en Docker (dashboard, descuentos, notificaciones, clientes, import/export) y los slices anteriores pendientes de validación manual; SEO y analítica avanzada quedan para el tramo final
+- [x] Última actualización: Slice 5 implementado — migración `add_audit_notification_discount`, auditoría con middleware, notificaciones de stock bajo, descuentos integrados en carrito/pedidos, clientes, import/export CSV, dashboard y navegación; 81 pruebas backend, builds y lint OK
 
 Cuando el usuario solicite **"Actualizar progreso"**, comparar este checklist con el código actual y con la evidencia proporcionada. Cuando solicite **"Continuar con el Slice #"**, trabajar únicamente en ese slice, mantener los contratos anteriores y actualizar esta sección al terminar.

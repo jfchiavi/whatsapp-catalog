@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { handleError } from '@/lib/errors';
+import { getCartPricing } from '@/modules/discounts/discounts.service';
 
 export async function GET(
   req: NextRequest,
@@ -44,7 +45,9 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ success: true, data: cart });
+    const pricing = await getCartPricing(tenantId, id);
+
+    return NextResponse.json({ success: true, data: { ...cart, pricing } });
   } catch (error) {
     return handleError(error);
   }

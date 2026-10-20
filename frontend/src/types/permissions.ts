@@ -7,4 +7,9 @@ export type Permission =
   | 'users'
   | 'tenants'
   | 'whatsapp_orders'
-  | 'storefront';
+  | 'storefront'
+  | 'audit'
+  | 'notifications'
+  | 'discounts'
+  | 'customers'
+  | 'import_export';

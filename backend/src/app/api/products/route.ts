@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { authMiddleware } from '@/middlewares/auth.middleware';
 import { permissionMiddleware } from '@/middlewares/permission.middleware';
+import { auditMiddleware } from '@/middlewares/audit.middleware';
 import { createProductSchema} from '@/validators/product.schema';
 import { getProducts, createProduct } from '@/modules/products/product.service';
 import { handleError } from '@/lib/errors';
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) {
+async function postHandler(req: NextRequest) {
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
 
@@ -47,3 +48,5 @@ export async function POST(req: NextRequest) {
   }
 
 }
+
+export const POST = auditMiddleware('Product')(postHandler);

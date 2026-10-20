@@ -1,0 +1,17 @@
+En Bolivia no existe una API pública y gratuita directa proveída por el Servicio de Impuestos Nacionales (SIN) para conectar un e-commerce al SIAT (Servicio de Impuestos Nacionales / SIAT en Línea); el SIN otorga especificaciones técnicas complejas (como firma digital ADSIB/DigiCert, generación de CUF, XML y SOAP/REST con token de sesión), pero requiere que el software esté homologado. [1] (https://docs.cucu.bo/introduction), [2] (https://www.impuestos.gob.bo/wp-content/uploads/2025/10/ECOS-JUNIO-SEPARATA-2025_compressed.pdf), [3] (https://yo-facturo.com/blog/que-es-el-siat-sistema-de-facturacion-de-bolivia/), [4] (https://cucu.bo/)
+Para integrar la facturación electrónica en tu tienda online, debes utilizar APIs privadas de proveedores autorizados que ya hicieron la homologación con el SIN. [1] (https://www.youtube.com/watch?v=-U_g0Nlvm7k&t=3), [2] (https://cucu.bo/)
+
+Opciones de APIs de facturación electrónica en Bolivia
+
+• CUCU API: Ofrece una API REST y conectores para múltiples lenguajes (Node.js, Python, Java, C#, etc.) que se integra con el SIAT, genera el CUF, PDF, ticket POS y firma digital en segundos. También cuenta con módulos directos para plataformas como Odoo. Más información en CUCU Bolivia o su documentación en CUCU API Docs. [1] (https://www.youtube.com/watch?v=D_nuJ636s-o), [2] (https://docs.cucu.bo/introduction), [3] (https://cucu.bo/), [4] (https://www.youtube.com/watch?v=-U_g0Nlvm7k&t=3)
+• Moyata Facturación: Proporciona una guía y API REST JSON para integrar flujos de facturación en aplicaciones externas, disponible en Moyata Facturación API. [1] (https://factura.moyata.net/api/v1/integracion/)
+• Orange Bill: Cuenta con una API REST para conectar sistemas externos, ERPs o e-commerce a la emisión de facturas, consultable en Orange Bill API. [1] (https://orangebill.com.bo/api/index.php)
+
+Cómo realizar la integración en tu E-commerce
+
+1. Habilitación en el SIN: Tu empresa debe estar dada de alta en el Impuestos Nacionales con un NIT activo y habilitada en el SIAT en Línea para facturación electrónica en línea. [1] (https://yo-facturo.com/blog/que-es-el-siat-sistema-de-facturacion-de-bolivia/)
+2. Contratar un proveedor de API: Elige una plataforma autorizada (como Cucu, Moyata u otra alternativa local homologada).
+3. Usar el entorno de pruebas (Sandbox): Casi todos estos proveedores te dan acceso a un entorno sandbox (piloto del SIAT) para que envíes peticiones HTTP (JSON) desde tu carrito de compras o backend sin emitir facturas fiscales reales. [1] (https://docs.cucu.bo/introduction)
+4. Programar el webhook o disparador: Configura tu e-commerce (WooCommerce, Shopify, Magento o desarrollo a medida) para que, al completarse el pago o cambiar el estado del pedido a "Pagado", se dispare una petición POST a la API del proveedor con los datos del cliente (NIT/CI, Razón Social, detalle de los productos, montos).
+5. Recepción y entrega del comprobante: La API del proveedor procesa la factura ante el SIAT, te devuelve la representación gráfica (PDF o link de descarga) y el código QR para enviárselo automáticamente por correo al comprador. [1] (https://docs.cucu.bo/introduction)
+Si me cuentas qué plataforma de e-commerce estás usando (por ejemplo: WooCommerce, PrestaShop, Shopify o código propio) y cu aproximadamente cuántas facturas emites al mes, puedo orientarte sobre qué tipo de integración o proveedor se adapta mejor a tu tienda.

@@ -1,12 +1,16 @@
 import { useNavigate } from 'react-router-dom';
 import { useSales } from '@/hooks/useSales';
+import { useExportSales } from '@/hooks/useImportExport';
+import { RoleBasedRender } from '@/components/dashboard/auth/RoleBasedRender';
 import { generateSalePDF } from '@/utils/pdfGenerator';
+import type { Sale } from '@/types/sales';
 
 export default function SalesListPage() {
+  const exportSales = useExportSales();
   const navigate = useNavigate();
   const { list } = useSales();
 
-  const handlePrint = async (sale: any) => {
+  const handlePrint = async (sale: Sale) => {
     const pdf = await generateSalePDF(sale);
     const url = URL.createObjectURL(pdf);
     window.open(url);
@@ -26,12 +30,22 @@ export default function SalesListPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-xl font-bold">Ventas</h1>
 
-        <button
-          onClick={() => navigate('/sales/new')}
-          className="bg-black text-white px-4 py-2 rounded"
-        >
-          Nueva venta
-        </button>
+        <div className="flex items-center gap-2">
+          <RoleBasedRender permission="import_export">
+            <button
+              onClick={() => exportSales.mutate({})}
+              className="border px-4 py-2 rounded text-gray-700 hover:bg-gray-50"
+            >
+              Exportar CSV
+            </button>
+          </RoleBasedRender>
+          <button
+            onClick={() => navigate('/sales/new')}
+            className="bg-black text-white px-4 py-2 rounded"
+          >
+            Nueva venta
+          </button>
+        </div>
       </div>
 
       {/* Tabla */}
@@ -48,7 +62,7 @@ export default function SalesListPage() {
             </tr>
           </thead>
           <tbody>
-            {list.data?.map((sale: any) => (
+            {list.data?.map((sale: Sale) => (
               <tr key={sale.id} className="border-t">
                 <td className="p-2">
                   {new Date(sale.createdAt).toLocaleDateString()}

@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { AppError } from '@/lib/errors';
+import { applyDiscounts } from '@/modules/discounts/discounts.service';
+import { findOrCreateCustomer } from '@/modules/customers/customers.service';
 
 const CART_EXPIRY_HOURS = 24;
 
@@ -297,12 +299,24 @@ export const submitCart = async (
     });
   }
 
-  const total = cart.items.reduce(
-    (sum, item) => sum + item.unitPriceSnapshot * item.quantity,
-    0
+  const pricing = await applyDiscounts(
+    tenantId,
+    cart.items.map((item) => ({
+      variantId: item.variantId,
+      quantity: item.quantity,
+      unitPrice: item.unitPriceSnapshot,
+    }))
   );
 
-  const messageText = buildOrderMessage(cart, customerName, customerNotes);
+  const customer = await findOrCreateCustomer(tenantId, {
+    name: customerName,
+    phone: customerPhone,
+    notes: customerNotes ?? null,
+  });
+
+  const total = pricing.total;
+
+  const messageText = buildOrderMessage(cart, customerName, customerNotes, pricing);
   const whatsappNumber = cart.branch?.tenant?.whatsappNumber || '5491112345678';
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(messageText)}`;
 
@@ -312,7 +326,7 @@ export const submitCart = async (
         tenantId,
         cartId: cart.id,
         branchId: cart.branchId!,
-        customerId: null,
+        customerId: customer.id,
         representativeId: representative?.id || null,
         customerName,
         customerPhone,
@@ -322,12 +336,12 @@ export const submitCart = async (
         whatsappMessage: messageText,
         whatsappUrl,
         items: {
-          create: cart.items.map((item) => ({
-            variantId: item.variantId,
-            quantity: item.quantity,
-            unitPriceSnapshot: item.unitPriceSnapshot,
-            skuSnapshot: item.variant.sku,
-            attributesSnapshot: item.variant.attributes as Record<string, string>,
+          create: cart.items.map((cartItem, index) => ({
+            variantId: cartItem.variantId,
+            quantity: cartItem.quantity,
+            unitPriceSnapshot: pricing.items[index].unitPriceAfterDiscount,
+            skuSnapshot: cartItem.variant.sku,
+            attributesSnapshot: cartItem.variant.attributes as Record<string, string>,
             tenantId,
           })),
         },
@@ -365,26 +379,37 @@ function buildOrderMessage(
     branch?: { name: string } | null;
   },
   customerName: string,
-  customerNotes?: string
+  customerNotes: string | undefined,
+  pricing: {
+    items: {
+      lineTotal: number;
+      unitPriceAfterDiscount: number;
+      discount: { name: string } | null;
+    }[];
+    subtotal: number;
+    discountTotal: number;
+    total: number;
+  }
 ): string {
   const itemsText = cart.items
-    .map(
-      (item) =>
-        `📦 ${item.variant.product.name} (${Object.entries(item.variant.attributes as Record<string, string>)
-          .map(([k, v]) => `${k}: ${v}`)
-          .join(', ')})
+    .map((item, index) => {
+      const priced = pricing.items[index];
+      const discountLine = priced.discount ? `\nDescuento: ${priced.discount.name}` : '';
+      return `📦 ${item.variant.product.name} (${Object.entries(item.variant.attributes as Record<string, string>)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(', ')})
 SKU: ${item.variant.sku}
-Cantidad: ${item.quantity}
-Subtotal: $${(item.unitPriceSnapshot * item.quantity).toFixed(2)}`
-    )
+Cantidad: ${item.quantity}${discountLine}
+Subtotal: $${priced.lineTotal.toFixed(2)}`;
+    })
     .join('\n\n');
 
-  const total = cart.items.reduce(
-    (sum, item) => sum + item.unitPriceSnapshot * item.quantity,
-    0
-  );
+  const totalsLines =
+    pricing.discountTotal > 0
+      ? `Subtotal: $${pricing.subtotal.toFixed(2)}\nDescuento: -$${pricing.discountTotal.toFixed(2)}\nTotal: $${pricing.total.toFixed(2)}`
+      : `Total: $${pricing.total.toFixed(2)}`;
 
-  let message = `Hola! Soy ${customerName} y quiero comprar:\n\n${itemsText}\n\nTotal: $${total.toFixed(2)}`;
+  let message = `Hola! Soy ${customerName} y quiero comprar:\n\n${itemsText}\n\n${totalsLines}`;
 
   if (cart.branch) {
     message += `\n\nSucursal: ${cart.branch.name}`;

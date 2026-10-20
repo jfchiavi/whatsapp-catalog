@@ -2,6 +2,7 @@ import { requireTenantId } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { authMiddleware } from '@/middlewares/auth.middleware';
 import { permissionMiddleware } from '@/middlewares/permission.middleware';
+import { auditMiddleware } from '@/middlewares/audit.middleware';
 import { getUserById, updateUser, deleteUser } from '@/modules/users/user.service';
 import { handleError } from '@/lib/errors';
 import { z } from 'zod';
@@ -34,7 +35,7 @@ export async function GET(
   }
 }
 
-export async function PUT(
+async function putHandler(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -63,7 +64,7 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
+async function deleteHandler(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -81,3 +82,6 @@ export async function DELETE(
     return handleError(error);
   }
 }
+
+export const PUT = auditMiddleware('User')(putHandler);
+export const DELETE = auditMiddleware('User')(deleteHandler);

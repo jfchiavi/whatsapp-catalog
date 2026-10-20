@@ -18,6 +18,20 @@ export interface CartItemData {
   };
 }
 
+export interface CartPricing {
+  items: {
+    variantId: string;
+    quantity: number;
+    unitPrice: number;
+    discount: { id: string; name: string; type: string; value: number } | null;
+    unitPriceAfterDiscount: number;
+    lineTotal: number;
+  }[];
+  subtotal: number;
+  discountTotal: number;
+  total: number;
+}
+
 export interface CartData {
   id: string;
   tenantId: string;
@@ -30,6 +44,7 @@ export interface CartData {
     id: string;
     name: string;
   } | null;
+  pricing?: CartPricing;
 }
 
 export interface OrderItemData {

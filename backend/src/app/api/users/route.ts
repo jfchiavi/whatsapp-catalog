@@ -2,6 +2,7 @@ import { requireTenantId } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { authMiddleware } from '@/middlewares/auth.middleware';
 import { permissionMiddleware } from '@/middlewares/permission.middleware';
+import { auditMiddleware } from '@/middlewares/audit.middleware';
 import { createUserSchema } from '@/validators/user.schema';
 import { createUser, getUsers } from '@/modules/users/user.service';
 import { handleError } from '@/lib/errors';
@@ -25,7 +26,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) {
+async function postHandler(req: NextRequest) {
   const auth = authMiddleware(req);
   if (auth instanceof NextResponse) return auth;
 
@@ -49,3 +50,5 @@ export async function POST(req: NextRequest) {
     return handleError(error);
   }
 }
+
+export const POST = auditMiddleware('User')(postHandler);

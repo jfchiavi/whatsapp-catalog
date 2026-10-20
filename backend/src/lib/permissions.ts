@@ -10,6 +10,11 @@ export const rolePermissions: Record<Role, string[]> = {
     'whatsapp_orders',
     'tenants',
     'users',
+    'audit',
+    'notifications',
+    'discounts',
+    'customers',
+    'import_export',
   ],
   ADMIN: [
     'dashboard',
@@ -20,6 +25,11 @@ export const rolePermissions: Record<Role, string[]> = {
     'whatsapp_orders',
     'users',
     'storefront',
+    'audit',
+    'notifications',
+    'discounts',
+    'customers',
+    'import_export',
   ],
   BRANCH_MANAGER: [
     'dashboard',
@@ -27,8 +37,11 @@ export const rolePermissions: Record<Role, string[]> = {
     'stock',
     'sales',
     'reports',
+    'audit',
+    'notifications',
+    'customers',
   ],
-  SELLER: ['dashboard', 'sales', 'whatsapp_orders'],
+  SELLER: ['dashboard', 'sales', 'whatsapp_orders', 'notifications', 'customers'],
 };
 
 export const hasPermission = (

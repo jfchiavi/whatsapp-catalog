@@ -10,6 +10,10 @@ import {
   MessageSquare,
   ClipboardList,
   Building2,
+  Bell,
+  Percent,
+  UserRound,
+  FileSpreadsheet,
 } from 'lucide-react';
 import type { Permission } from '@/types/permissions';
 import type { UserRole } from '@/types/auth';
@@ -83,6 +87,30 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     path: '/users',
     icon: Users,
     permission: 'users',
+  },
+  {
+    label: 'Descuentos',
+    path: '/discounts',
+    icon: Percent,
+    permission: 'discounts',
+  },
+  {
+    label: 'Clientes',
+    path: '/customers',
+    icon: UserRound,
+    permission: 'customers',
+  },
+  {
+    label: 'Notificaciones',
+    path: '/notifications',
+    icon: Bell,
+    permission: 'notifications',
+  },
+  {
+    label: 'Importar/Exportar',
+    path: '/import',
+    icon: FileSpreadsheet,
+    permission: 'import_export',
   },
   {
     label: 'Configuración',

@@ -10,9 +10,12 @@ import {
   useDeleteProduct,
 } from '@/hooks/useProducts';
 import { useCreateVariant, useUpdateVariant, useDeleteVariant } from '@/hooks/useVariants';
+import { useExportProducts } from '@/hooks/useImportExport';
+import { RoleBasedRender } from '@/components/dashboard/auth/RoleBasedRender';
 import type { Product, Variant, CreateProductInput, UpdateProductInput, CreateVariantInput, UpdateVariantInput } from '@/types/product';
 
 export default function ProductsPage() {
+  const exportProducts = useExportProducts();
   const { data: products, isLoading, error } = useProducts();
   const createProductMutation = useCreateProduct();
   const updateProductMutation = useUpdateProduct();
@@ -71,12 +74,22 @@ export default function ProductsPage() {
     <div className="p-6 space-y-6">
       <header className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Productos</h1>
-        <button
-          onClick={() => setShowCreateProduct(true)}
-          className="px-4 py-2 rounded-lg bg-black text-white hover:bg-gray-800"
-        >
-          Nuevo producto
-        </button>
+        <div className="flex items-center gap-2">
+          <RoleBasedRender permission="import_export">
+            <button
+              onClick={() => exportProducts.mutate()}
+              className="px-4 py-2 rounded-lg border text-gray-700 hover:bg-gray-50"
+            >
+              Exportar CSV
+            </button>
+          </RoleBasedRender>
+          <button
+            onClick={() => setShowCreateProduct(true)}
+            className="px-4 py-2 rounded-lg bg-black text-white hover:bg-gray-800"
+          >
+            Nuevo producto
+          </button>
+        </div>
       </header>
 
       {products?.length === 0 && (

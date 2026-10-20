@@ -23,6 +23,11 @@ import OrderDetailPage from '@/features/orders/OrderDetailPage';
 import TenantsPage from '@/features/platform/TenantsPage';
 import PlatformDashboard from '@/features/platform/PlatformDashboard';
 import UsersPage from '@/features/users/UsersPage';
+import DiscountsPage from '@/features/discounts/DiscountsPage';
+import CustomersPage from '@/features/customers/CustomersPage';
+import CustomerDetailPage from '@/features/customers/CustomerDetailPage';
+import NotificationsPage from '@/features/notifications/NotificationsPage';
+import ImportPage from '@/features/import/ImportPage';
 import ErrorPage from '@/components/dashboard/layout/ErrorPage';
 
 export const router = createBrowserRouter([
@@ -73,6 +78,11 @@ export const router = createBrowserRouter([
           { path: '/orders', lazy: async () => {return {Component: OrdersPage }}},
           { path: '/orders/:id', lazy: async () => {return {Component: OrderDetailPage }}},
           { path: '/users', lazy: async () => {return {Component: UsersPage }}},
+          { path: '/discounts', lazy: async () => {return {Component: DiscountsPage }}},
+          { path: '/customers', lazy: async () => {return {Component: CustomersPage }}},
+          { path: '/customers/:id', lazy: async () => {return {Component: CustomerDetailPage }}},
+          { path: '/notifications', lazy: async () => {return {Component: NotificationsPage }}},
+          { path: '/import', lazy: async () => {return {Component: ImportPage }}},
           {
             path: '/platform',
             children: [

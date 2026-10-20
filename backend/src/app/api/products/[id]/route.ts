@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Prisma } from '@prisma/client';
 import { authMiddleware } from '@/middlewares/auth.middleware';
 import { permissionMiddleware } from '@/middlewares/permission.middleware';
+import { auditMiddleware } from '@/middlewares/audit.middleware';
 import { updateProductSchema } from '@/validators/product.schema';
 import { getProductById, updateProduct, deleteProduct } from '@/modules/products/product.service';
 import { AppError, handleError } from '@/lib/errors';
@@ -27,7 +28,7 @@ export async function GET(
   }
 }
 
-export async function PUT(
+async function putHandler(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -57,7 +58,7 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
+async function deleteHandler(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -82,3 +83,6 @@ export async function DELETE(
       return handleError(error);
   }
 }
+
+export const PUT = auditMiddleware('Product')(putHandler);
+export const DELETE = auditMiddleware('Product')(deleteHandler);

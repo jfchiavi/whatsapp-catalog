@@ -91,6 +91,7 @@ export const useCartStore = () => {
     isLoading,
     totalItems,
     subtotal,
+    pricing: serverCart?.pricing ?? null,
     add,
     update,
     remove,

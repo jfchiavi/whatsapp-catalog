@@ -1,5 +1,6 @@
 import { LogOut, User } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { NotificationBell } from '@/components/notifications/NotificationBell';
 
 
 export const Topbar = () => {
@@ -10,6 +11,7 @@ export const Topbar = () => {
         <h1 className="font-semibold">Dashboard</h1>
 
         <div className="flex items-center gap-4">
+        <NotificationBell />
         <div className="flex items-center gap-2 text-sm">
             <User size={16} />
             <span>{user?.name}</span>
