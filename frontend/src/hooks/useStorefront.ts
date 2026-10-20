@@ -44,6 +44,8 @@ export const usePublishTenantHomeDraft = () => {
     },
   });
 };
+import type { StorefrontMetrics } from '@/services/storefront.api';
+import { getStorefrontMetrics } from '@/services/storefront.api';
 
 export const useRestoreTenantHomePublication = () => {
   const queryClient = useQueryClient();
@@ -52,3 +54,8 @@ export const useRestoreTenantHomePublication = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['storefront-draft'] }),
   });
 };
+
+export const useStorefrontMetrics = (days: number) => useQuery<StorefrontMetrics>({
+  queryKey: ['storefront-metrics', days],
+  queryFn: () => getStorefrontMetrics(days),
+});

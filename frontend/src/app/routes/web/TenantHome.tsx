@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { TenantProvider } from '@/app/providers/TenantProvider';
@@ -6,12 +7,15 @@ import { TenantProductCard } from '@/components/tenant/TenantProductCard';
 import { TenantHomeSections } from '@/components/tenant/TenantHomeSections';
 import { useCatalogProducts } from '@/hooks/useCatalog';
 import { usePublishedTenantHome } from '@/hooks/useStorefront';
+import { recordStorefrontMetric } from '@/services/storefront.api';
 import { useTenant } from '@/hooks/useTenant';
 import type { TenantHomeContent } from '@/types/storefront';
 
 export function TenantHomeContent() {
+  const hasRecordedView = useRef(false);
   const { tenantSlug } = useParams();
   const { tenant, loading: tenantLoading, error: tenantError } = useTenant();
+  const metricTenantSlug = tenant?.slug;
   const { data: products = [], isLoading, error } = useCatalogProducts();
   const { data: publishedHome } = usePublishedTenantHome(tenant?.slug);
   const catalogPath = tenantSlug ? `/t/${tenantSlug}/catalogo` : '/catalogo';
@@ -27,6 +31,12 @@ export function TenantHomeContent() {
     ctaLabel: 'Ver catálogo',
   };
   const sections = publishedHome?.content.sections ?? [fallbackHero];
+
+  useEffect(() => {
+    if (!metricTenantSlug || hasRecordedView.current) return;
+    hasRecordedView.current = true;
+    void recordStorefrontMetric(metricTenantSlug, 'HOME_VIEW');
+  }, [metricTenantSlug]);
 
   if (tenantLoading || isLoading) {
     return (
@@ -59,6 +69,7 @@ export function TenantHomeContent() {
           sections={sections}
           tenantName={tenant.name}
           tenantSlug={tenantSlug}
+          metricTenantSlug={tenant.slug}
           whatsappNumber={tenant.whatsappNumber}
           products={publishedProducts}
         />
@@ -75,6 +86,7 @@ export function TenantHomeContent() {
             </div>
             <Link
               to={catalogPath}
+              onClick={() => tenant.slug && void recordStorefrontMetric(tenant.slug, 'CATALOG_CLICK')}
               className="hidden items-center gap-2 text-sm font-semibold text-gray-700 hover:text-gray-950 sm:inline-flex"
             >
               Ver todos
@@ -88,8 +100,13 @@ export function TenantHomeContent() {
             </p>
           ) : publishedProducts.length > 0 ? (
             <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {publishedProducts.slice(0, 3).map((product) => (
-                <TenantProductCard key={product.id} product={product} tenantSlug={tenantSlug} />
+                {publishedProducts.slice(0, 3).map((product) => (
+                  <TenantProductCard
+                    key={product.id}
+                    product={product}
+                    tenantSlug={tenantSlug}
+                    onProductClick={(productId) => void recordStorefrontMetric(tenant.slug, 'FEATURED_PRODUCT_CLICK', productId)}
+                  />
               ))}
             </div>
           ) : (
@@ -100,6 +117,7 @@ export function TenantHomeContent() {
 
           <Link
             to={catalogPath}
+            onClick={() => tenant.slug && void recordStorefrontMetric(tenant.slug, 'CATALOG_CLICK')}
             className="mt-6 inline-flex min-h-11 items-center gap-2 border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-800 transition hover:border-gray-950 hover:text-gray-950 sm:hidden"
           >
             Ir al catálogo

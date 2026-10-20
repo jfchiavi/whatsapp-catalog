@@ -6,9 +6,10 @@ interface TenantHeroProps {
   content: Extract<TenantHomeContent['sections'][number], { type: 'hero' }>;
   tenantName: string;
   catalogPath: string;
+  onCatalogClick?: () => void;
 }
 
-export function TenantHero({ content, tenantName, catalogPath }: TenantHeroProps) {
+export function TenantHero({ content, tenantName, catalogPath, onCatalogClick }: TenantHeroProps) {
   if (!content.enabled) return null;
   return (
     <section className="border-b border-gray-200 bg-slate-50">
@@ -23,6 +24,7 @@ export function TenantHero({ content, tenantName, catalogPath }: TenantHeroProps
           )}
           <Link
             to={catalogPath}
+            onClick={onCatalogClick}
             className="mt-7 inline-flex min-h-12 items-center gap-3 bg-gray-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-gray-800"
           >
             {content.ctaLabel}

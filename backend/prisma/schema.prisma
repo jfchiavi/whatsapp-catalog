@@ -21,6 +21,14 @@ enum Role {
   SELLER
 }
 
+enum StorefrontMetricEvent {
+  HOME_VIEW
+  CATALOG_CLICK
+  CATEGORY_CLICK
+  FEATURED_PRODUCT_CLICK
+  WHATSAPP_CLICK
+}
+
 model Tenant {
   id             String   @id @default(uuid())
   name           String
@@ -45,6 +53,7 @@ model Tenant {
   customers      Customer[]
   homePage       TenantHomePage?
   homePublications TenantHomePublication[]
+  storefrontMetrics StorefrontMetricDaily[]
   carts          Cart[]
   cartItems      CartItem[]
   orders         Order[]
@@ -74,6 +83,21 @@ model TenantHomePublication {
 
   @@unique([tenantId, revision])
   @@index([tenantId, publishedAt])
+}
+
+model StorefrontMetricDaily {
+  id        String                @id @default(uuid())
+  tenantId  String
+  tenant    Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  day       DateTime              @db.Date
+  event     StorefrontMetricEvent
+  target    String                @default("")
+  count     Int                   @default(0)
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  @@unique([tenantId, day, event, target])
+  @@index([tenantId, day])
 }
 
 model User {

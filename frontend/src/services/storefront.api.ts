@@ -1,5 +1,21 @@
 import { api } from './api';
 import type { TenantHomeContent, TenantHomeDraftResponse, TenantHomePublicationSummary } from '@/types/storefront';
+export type StorefrontMetricEvent = 'HOME_VIEW' | 'CATALOG_CLICK' | 'CATEGORY_CLICK' | 'FEATURED_PRODUCT_CLICK' | 'WHATSAPP_CLICK';
+
+export interface StorefrontMetrics {
+  from: string;
+  to: string;
+  totals: Record<StorefrontMetricEvent, number>;
+  targets: Record<string, number>;
+}
+
+export const recordStorefrontMetric = (slug: string, event: StorefrontMetricEvent, target = '') =>
+  api.post(`/storefront/${encodeURIComponent(slug)}/metrics`, { event, target }).catch(() => undefined);
+
+export const getStorefrontMetrics = async (days: number): Promise<StorefrontMetrics> => {
+  const { data } = await api.get(`/storefront/admin/metrics?days=${days}`);
+  return data;
+};
 
 export const getTenantHomeDraft = async (): Promise<TenantHomeDraftResponse> => {
   const { data } = await api.get('/storefront/admin');

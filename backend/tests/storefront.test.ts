@@ -7,6 +7,8 @@ import { GET as getAdminDraft, PUT as putAdminDraft } from '../src/app/api/store
 import { POST as postPublish } from '../src/app/api/storefront/admin/publish/route';
 import { GET as getPublicHome } from '../src/app/api/storefront/[slug]/route';
 import { normalizeTenantHomeContent, tenantHomeV2Schema } from '../src/validators/tenant.schema';
+import { StorefrontMetricEvent } from '@prisma/client';
+import { getStorefrontMetrics, recordStorefrontMetric } from '../src/modules/storefront/storefront-metrics.service';
 import {
   getOrCreateTenantHomePage,
   getTenantHomePublicationHistory,
@@ -104,6 +106,17 @@ describe('Storefront service', () => {
         { id: tenantBId, name: 'Storefront B', slug: slugB },
       ],
     });
+
+    const metricDay = new Date('2026-10-19T00:00:00.000Z');
+    await recordStorefrontMetric(tenantAId, StorefrontMetricEvent.HOME_VIEW, '', metricDay);
+    await recordStorefrontMetric(tenantAId, StorefrontMetricEvent.HOME_VIEW, '', metricDay);
+    await recordStorefrontMetric(tenantAId, StorefrontMetricEvent.CATEGORY_CLICK, 'Cerámica', metricDay);
+    const metricsA = await getStorefrontMetrics(tenantAId, metricDay, metricDay);
+    const metricsB = await getStorefrontMetrics(tenantBId, metricDay, metricDay);
+    expect(metricsA.totals.HOME_VIEW).toBe(2);
+    expect(metricsA.totals.CATEGORY_CLICK).toBe(1);
+    expect(metricsA.targets['CATEGORY_CLICK:Cerámica']).toBe(1);
+    expect(metricsB.totals.HOME_VIEW).toBe(0);
 
     const foreignProduct = await prisma.product.create({
       data: {

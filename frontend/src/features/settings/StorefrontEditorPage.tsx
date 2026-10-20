@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ArrowDown, ArrowUp, Eye, Globe, Plus, Save, Trash2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProducts } from '@/hooks/useProducts';
+import { useStorefrontMetrics } from '@/hooks/useStorefront';
 import {
   usePublishTenantHomeDraft,
   useRestoreTenantHomePublication,
@@ -67,6 +68,8 @@ function StorefrontEditorForm({ data }: { data: NonNullable<ReturnType<typeof us
   const restorePublication = useRestoreTenantHomePublication();
   const { data: products = [] } = useProducts();
   const { data: history = [] } = useTenantHomePublicationHistory();
+  const [metricDays, setMetricDays] = useState(30);
+  const { data: metrics, isLoading: metricsLoading } = useStorefrontMetrics(metricDays);
   const [content, setContent] = useState<TenantHomeContent>(data.draftContent);
   const [previewVisible, setPreviewVisible] = useState(false);
   const activeProducts = products.filter((product) => product.active);
@@ -197,6 +200,23 @@ function StorefrontEditorForm({ data }: { data: NonNullable<ReturnType<typeof us
         </div>
 
         <aside className="h-fit space-y-5 border-t border-gray-200 pt-5 lg:sticky lg:top-24 lg:border-t-0 lg:pt-0">
+          <section className="border-b border-gray-200 pb-4">
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-semibold text-gray-900">Actividad de la tienda</h2>
+              <select aria-label="Período de métricas" value={metricDays} onChange={(event) => setMetricDays(Number(event.target.value))} className="border border-gray-300 bg-white px-2 py-1 text-xs">
+                <option value={7}>7 días</option>
+                <option value={30}>30 días</option>
+                <option value={90}>90 días</option>
+              </select>
+            </div>
+            {metricsLoading ? <p className="mt-3 text-xs text-gray-500">Cargando métricas...</p> : metrics ? <dl className="mt-3 grid grid-cols-2 gap-3">
+              <Metric label="Vistas de portada" value={metrics.totals.HOME_VIEW} />
+              <Metric label="Clics a catálogo" value={metrics.totals.CATALOG_CLICK} />
+              <Metric label="Categorías" value={metrics.totals.CATEGORY_CLICK} />
+              <Metric label="Destacados" value={metrics.totals.FEATURED_PRODUCT_CLICK} />
+              <Metric label="WhatsApp" value={metrics.totals.WHATSAPP_CLICK} />
+            </dl> : <p className="mt-3 text-xs text-gray-500">No hay datos para este período.</p>}
+          </section>
           <section>
             <h2 className="text-sm font-semibold text-gray-900">Publicación</h2>
             <p className="mt-2 text-sm text-gray-600">{data.hasPublishedContent ? `Revisión ${data.revision} · ${data.publishedAt ? new Date(data.publishedAt).toLocaleString('es-AR') : ''}` : 'Todavía no hay una versión publicada.'}</p>
@@ -217,6 +237,13 @@ function StorefrontEditorForm({ data }: { data: NonNullable<ReturnType<typeof us
       {previewVisible && <Preview content={content} tenantName={data.tenant.name} slug={data.tenant.slug} products={activeProducts} />}
     </div>
   );
+}
+
+function Metric({ label, value }: { label: string; value: number }) {
+  return <div className="border-l-2 border-gray-300 pl-2">
+    <dt className="text-[11px] leading-4 text-gray-500">{label}</dt>
+    <dd className="mt-0.5 text-lg font-semibold tabular-nums text-gray-950">{value.toLocaleString('es-AR')}</dd>
+  </div>;
 }
 
 function AddSection({ onAdd }: { onAdd: (type: TenantHomeSectionType) => void }) {

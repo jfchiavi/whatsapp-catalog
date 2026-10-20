@@ -4,11 +4,13 @@ import type { Product } from '@/types/product';
 import type { TenantHomeContent } from '@/types/storefront';
 import { TenantHero } from './TenantHero';
 import { TenantProductCard } from './TenantProductCard';
+import { recordStorefrontMetric } from '@/services/storefront.api';
 
 interface TenantHomeSectionsProps {
   sections: TenantHomeContent['sections'];
   tenantName: string;
   tenantSlug?: string;
+  metricTenantSlug?: string;
   whatsappNumber?: string | null;
   products: Product[];
   preview?: boolean;
@@ -18,6 +20,7 @@ export function TenantHomeSections({
   sections,
   tenantName,
   tenantSlug,
+  metricTenantSlug,
   whatsappNumber,
   products,
 }: TenantHomeSectionsProps) {
@@ -34,7 +37,7 @@ export function TenantHomeSections({
   return <>
     {sections.filter((section) => section.enabled).map((section) => {
       if (section.type === 'hero') {
-        return <TenantHero key={section.id} content={section} tenantName={tenantName} catalogPath={catalogPath} />;
+        return <TenantHero key={section.id} content={section} tenantName={tenantName} catalogPath={catalogPath} onCatalogClick={() => metricTenantSlug && void recordStorefrontMetric(metricTenantSlug, 'CATALOG_CLICK')} />;
       }
 
       if (section.type === 'categories') {
@@ -46,6 +49,7 @@ export function TenantHomeSections({
                 <Link
                   key={`${item.attributeKey}-${item.attributeValue}`}
                   to={`${catalogPath}?${new URLSearchParams({ attributeKey: item.attributeKey, attributeValue: item.attributeValue })}`}
+                  onClick={() => metricTenantSlug && void recordStorefrontMetric(metricTenantSlug, 'CATEGORY_CLICK', item.label)}
                   className="border-b-2 border-gray-300 px-1 py-3 text-base font-medium text-gray-800 hover:border-gray-950 hover:text-gray-950"
                 >
                   {item.label}
@@ -68,7 +72,7 @@ export function TenantHomeSections({
               <Link to={catalogPath} className="text-sm font-semibold text-gray-700 hover:text-gray-950">Ver catálogo</Link>
             </div>
             <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {featured.map((product) => <TenantProductCard key={product.id} product={product} tenantSlug={tenantSlug} />)}
+              {featured.map((product) => <TenantProductCard key={product.id} product={product} tenantSlug={tenantSlug} onProductClick={(productId) => metricTenantSlug && void recordStorefrontMetric(metricTenantSlug, 'FEATURED_PRODUCT_CLICK', productId)} />)}
             </div>
           </section>
         );
@@ -84,7 +88,7 @@ export function TenantHomeSections({
                 <p className="text-xs font-semibold uppercase text-amber-800">Promoción</p>
                 <h2 className="mt-2 text-3xl font-semibold text-gray-950">{section.title}</h2>
                 <p className="mt-3 max-w-2xl text-gray-700">{section.description}</p>
-                <Link to={catalogPath} className="mt-5 inline-flex border-b border-gray-900 pb-1 text-sm font-semibold text-gray-950">{section.ctaLabel}</Link>
+                <Link to={catalogPath} onClick={() => metricTenantSlug && void recordStorefrontMetric(metricTenantSlug, 'CATALOG_CLICK')} className="mt-5 inline-flex border-b border-gray-900 pb-1 text-sm font-semibold text-gray-950">{section.ctaLabel}</Link>
               </div>
               {section.imageUrl && <img src={section.imageUrl} alt="" className="max-h-80 w-full object-cover" />}
             </div>
@@ -118,7 +122,7 @@ export function TenantHomeSections({
             {section.hours && <span>{section.hours}</span>}
             {section.phone && <a href={`tel:${section.phone}`} className="hover:underline">{section.phone}</a>}
             {section.email && <a href={`mailto:${section.email}`} className="hover:underline">{section.email}</a>}
-            {whatsappNumber && <span>WhatsApp: {whatsappNumber}</span>}
+            {whatsappNumber && <a href={`https://wa.me/${whatsappNumber}`} onClick={() => metricTenantSlug && void recordStorefrontMetric(metricTenantSlug, 'WHATSAPP_CLICK')} className="hover:underline">WhatsApp: {whatsappNumber}</a>}
           </address>
         </section>
       );

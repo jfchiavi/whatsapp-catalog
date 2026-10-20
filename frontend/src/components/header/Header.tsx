@@ -2,6 +2,7 @@ import { Link, NavLink, useParams } from 'react-router-dom';
 import { useTenant } from '@/hooks/useTenant';
 import { SearchBar } from './SearchBar';
 import { CartButton } from './CartButton';
+import { recordStorefrontMetric } from '@/services/storefront.api';
 
 export const Header = () => {
   const { tenantSlug } = useParams();
@@ -36,6 +37,7 @@ export const Header = () => {
             </NavLink>
             <NavLink
               to={storePath ? `${storePath}/catalogo` : '/catalogo'}
+              onClick={() => tenant?.slug && void recordStorefrontMetric(tenant.slug, 'CATALOG_CLICK')}
               className={({ isActive }) =>
                 `rounded px-3 py-2 text-sm font-medium transition-colors ${isActive ? 'text-gray-950' : 'text-gray-500 hover:text-gray-900'}`
               }

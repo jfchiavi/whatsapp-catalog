@@ -7,11 +7,13 @@ import { useCartStore } from '@/store/cart.store';
 interface TenantProductCardProps {
   product: Product;
   tenantSlug?: string;
+  onProductClick?: (productId: string) => void;
 }
 
 export const TenantProductCard: React.FC<TenantProductCardProps> = ({
   product,
   tenantSlug,
+  onProductClick,
 }) => {
   const { add } = useCartStore();
   const defaultVariant = product.variants?.[0];
@@ -52,7 +54,7 @@ export const TenantProductCard: React.FC<TenantProductCardProps> = ({
   return (
     <div className="group flex flex-col bg-white rounded-xl border border-gray-200/90 overflow-hidden shadow-2xs hover:shadow-md transition-all duration-200">
       {/* Contenedor de Imagen y Badges */}
-      <Link to={detailUrl} className="relative block aspect-4/3 w-full overflow-hidden bg-gray-50">
+      <Link to={detailUrl} onClick={() => onProductClick?.(product.id)} className="relative block aspect-4/3 w-full overflow-hidden bg-gray-50">
         <img
           src={product.imageUrl || 'https://picsum.photos/400/300?blur=2'}
           alt={product.name}
@@ -89,7 +91,7 @@ export const TenantProductCard: React.FC<TenantProductCardProps> = ({
       <div className="flex flex-col flex-1 p-4 justify-between">
         <div>
           {/* Título del producto */}
-          <Link to={detailUrl} className="block group-hover:text-primary transition-colors">
+          <Link to={detailUrl} onClick={() => onProductClick?.(product.id)} className="block group-hover:text-primary transition-colors">
             <h3 className="font-semibold text-gray-900 text-base leading-snug line-clamp-2">
               {product.name}
             </h3>

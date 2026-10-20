@@ -165,7 +165,48 @@ Permitir que el ADMIN edite el rubro y el hero de su propia portada como borrado
 No es requisito de la etapa actual. Abordar cuando catálogo, pedidos, administración y storefront estén funcionalmente completos y validados.
 
 - [ ] SEO configurable por tenant: title, description, imagen social, canonical y datos estructurados.
-- [ ] Métricas de conversión: clics en categorías/secciones, productos, catálogo y WhatsApp; definir consentimiento, retención y aislamiento antes de recopilar datos.
+- [ ] Analítica avanzada y atribución de conversiones; las métricas operativas básicas de la portada se adelantan al Slice 1.4.
+
+### Decisiones para la fase final
+
+- Canonical y sitemap deben apuntar al host público canónico del tenant; evitar indexar como duplicados las rutas por slug, subdominio y dominio propio.
+- Metadatos sociales e imágenes deben proceder de contenido publicado y con permisos de uso; nunca revelar datos del borrador.
+- JSON-LD se seleccionará por tipo de tienda y solo incluirá ofertas, precios, disponibilidad, dirección y horarios respaldados por datos vigentes.
+- Definir política de consentimiento, aviso de privacidad, retención y eliminación de datos antes de introducir analítica identificable o cookies no esenciales.
+- La atribución avanzada debe diferenciar clic, pedido iniciado, pedido confirmado y venta; no inferir una conversión de un simple clic.
+- Métricas agregadas deben conservar `tenantId` en cada consulta y no permitir consultas cross-tenant salvo rol/plataforma con permiso auditado.
+- Definir zona horaria de reportes, exclusión de bots, límites de frecuencia y estrategia de migración/retención antes de ampliar el esquema de métricas.
+
+## Slice 1.4: Métricas básicas de storefront
+
+### Objetivo
+
+Dar al ADMIN una lectura sencilla de la actividad de la portada para orientar las siguientes iteraciones del storefront. Son conteos agregados diarios y no representan usuarios únicos ni conversiones comerciales.
+
+### Checks de implementación
+
+- [x] Agregar buckets diarios tenant-scoped por evento y destino, con upsert atómico e índice único.
+- [x] Registrar vistas de portada, clics a catálogo/categorías/productos destacados y WhatsApp sin IP, sesión, cookies ni datos de contacto.
+- [x] Validar eventos mediante enum cerrado; validar productos destacados activos del tenant y categorías de la publicación actual.
+- [x] Agregar consulta administrativa por rango máximo de 90 días, derivando tenant exclusivamente del JWT.
+- [x] Mostrar en `/dashboard/storefront` totales de 7/30/90 días.
+- [x] Tests de agregación diaria y aislamiento entre tenants (suite storefront: 5 pruebas pasan).
+- [ ] Añadir rate limiting o protección antiabuso para el endpoint público antes de despliegues de alto tráfico.
+- [x] Migración `20261020100000_add_storefront_daily_metrics` aplicada; builds frontend/backend y lint focalizado correctos.
+
+### Interpretación y límites
+
+- Los datos son eventos/acciones, no personas; repetición de una acción cuenta varias veces.
+- `HOME_VIEW` es una vista de ruta (deduplicada en el montaje normal del componente), no una sesión ni un visitante único.
+- `CATALOG_CLICK`, `CATEGORY_CLICK`, `FEATURED_PRODUCT_CLICK` y `WHATSAPP_CLICK` son interacciones, no pedidos ni ventas confirmadas.
+- Los buckets usan fecha UTC; cualquier reporte en hora local debe convertir límites de fecha de forma explícita.
+
+### Checks de validación manual
+
+- [ ] Generar algunas vistas/clics desde dos tenants y verificar totales separados en el panel.
+- [ ] Cambiar 7/30/90 días y verificar que los rangos y resultados cambien correctamente.
+- [ ] Confirmar que un ADMIN no puede leer métricas de otro tenant.
+- [ ] Verificar en Docker que eventos y panel están activos tras reconstruir backend y frontend.
 
 ### Checks de validación manual
 
@@ -457,7 +498,8 @@ Actualizar esta sección después de cada sesión de trabajo. `[x]` requiere evi
 - [ ] Slice 4 completo (implementación ~90%, validación manual pendiente)
 - [ ] Slice 5 completo
 - [ ] Slice 1.3 completo (gestor ampliado implementado; validación manual actualizada y pruebas frontend E2E pendientes)
-- [ ] Próximo slice activo: validar manualmente Slice 1.3 y continuar slices funcionales pendientes; SEO/métricas reservados para el tramo final del sistema
-- [x] Última actualización: Slice 1.3 ampliado con secciones e historial; migraciones, tests backend y builds frontend/backend correctos
+- [ ] Slice 1.4 completo (métricas básicas implementadas; pruebas manuales en Docker pendientes)
+- [ ] Próximo slice activo: validar Slice 1.4 en Docker y continuar slices funcionales; SEO y analítica avanzada quedan para el tramo final
+- [x] Última actualización: Slice 1.4 métricas básicas agregado; migración, tests y builds implementados
 
 Cuando el usuario solicite **"Actualizar progreso"**, comparar este checklist con el código actual y con la evidencia proporcionada. Cuando solicite **"Continuar con el Slice #"**, trabajar únicamente en ese slice, mantener los contratos anteriores y actualizar esta sección al terminar.
