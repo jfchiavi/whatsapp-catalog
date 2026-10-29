@@ -546,6 +546,8 @@ Preparar el esquema multitenant para pasarelas de pago y facturación desacoplad
 - [ ] Configurar credenciales Libélula de un tenant y verificar que se guardan cifradas en BD y la API nunca devuelve el appkey completo.
 - [ ] Intentar leer o escribir la config de otro tenant y confirmar `403` o lista vacía.
 
+> Ejecutado el 2026-10-28 contra Docker con evidencia (BD: `appkeyEncrypted` en `v1:<iv>:<tag>:<data>` sin texto plano; API responde solo `****4321`/`****cret`; SELLER y SUPER_ADMIN reciben `403`; payload inválido `400`; ADMIN de Fashion ve `data: []` y escribe una fila aislada sin afectar la de Demo). Pendiente de confirmación del usuario para marcar.
+
 ---
 
 ## Slice 7: Arquitectura Strategy de pagos y facturación
@@ -564,17 +566,22 @@ Crear las abstracciones `IPaymentStrategy`/`IBillingStrategy` y los contextos qu
 ### Checks de implementación
 
 #### Interfaces
-- [ ] `IPaymentStrategy` con `createPayment(order, config)` → `{ gatewayTransactionId, qrUrl?, paymentUrl?, status }` y `processWebhook(params)` → resultado tipado.
-- [ ] `IBillingStrategy` con `emitInvoice(order, config)` → `{ invoiceId, invoiceUrl }`.
-- [ ] Tipos de dominio para configs y resultados, sin `any`.
+- [x] `IPaymentStrategy` (en `modules/payments/payment-strategy.ts`) con `createPayment(order, config)` → `{ gatewayTransactionId, qrUrl?, paymentUrl?, status }` y `processWebhook(params, config)` → resultado tipado (el config se pasa también para que la estrategia pueda validar/descifrar credenciales en el webhook).
+- [x] `IBillingStrategy` con `emitInvoice(order, config)` → `{ invoiceId, invoiceUrl }`.
+- [x] Tipos de dominio para configs y resultados (`modules/payments/payment-types.ts`), sin `any`.
 
 #### Contextos
-- [ ] `PaymentContext`: recibe `tenantId`, carga `TenantPaymentConfig` activa y delega en la estrategia del gateway; error `PAYMENT_NOT_CONFIGURED` si no hay config activa.
-- [ ] `BillingContext`: si `TenantBillingConfig.isEnabled` es falso o el provider es `LIBELULA_NATIVE`, ejecuta no-op (la facturación nativa la resuelve Libélula en el webhook); si está habilitado, instancia la estrategia correspondiente.
-- [ ] Registry de estrategias: mapa `PaymentGatewayType → IPaymentStrategy` y `BillingProviderType → IBillingStrategy` para agregar proveedores solo registrándolos.
+- [x] `PaymentContext` (`modules/payments/payment-context.ts`): recibe `tenantId`, carga `TenantPaymentConfig` activa (credencial descifrada en memoria) y delega en la estrategia del gateway; error `PAYMENT_NOT_CONFIGURED` si no hay config activa y `PAYMENT_GATEWAY_MISMATCH` si la config activa no coincide con el gateway del webhook.
+- [x] `BillingContext`: sin config o `isEnabled = false` o provider `LIBELULA_NATIVE` → no-op (`null`, la facturación nativa la resuelve Libélula en el webhook); si está habilitado, instancia la estrategia correspondiente.
+- [x] Registry de estrategias (`registerPaymentStrategy`/`registerBillingStrategy` + getters con `PAYMENT_STRATEGY_NOT_REGISTERED`/`BILLING_STRATEGY_NOT_REGISTERED`): mapa `PaymentGatewayType → IPaymentStrategy` y `BillingProviderType → IBillingStrategy` para agregar proveedores solo registrándolos.
 
 #### Tests
-- [ ] `backend/tests/payment-strategies.test.ts` con estrategias fake: resolución por tenant, error sin config activa, no-op de facturación y registro de un proveedor ficticio (stub CUCU) sin tocar el resto.
+- [x] `backend/tests/payment-strategies.test.ts` con estrategias fake: resolución por tenant con credenciales descifradas, error sin config activa (y con config inactiva), no-op de facturación (deshabilitada/ausente/nativa), delegación de webhook con mismatch de gateway y registro de un proveedor ficticio (stub CUCU) sin tocar el resto — 8 pruebas pasan.
+
+### Verificación ejecutada
+
+- `npx vitest run`: 13 archivos, 113 pruebas pasan.
+- `npx tsc --noEmit` sin errores; `npm run build` de Next.js compila; ESLint focalizado de los archivos nuevos sin errores.
 
 ### Checks de validación manual
 
@@ -709,13 +716,13 @@ Actualizar esta sección después de cada sesión de trabajo. `[x]` requiere evi
 - [ ] Slice 5 completo (implementación completa: schema, backend, frontend y 21 pruebas nuevas; validación manual pendiente)
 - [ ] Slice 1.3 completo (gestor ampliado implementado; validación manual actualizada y pruebas frontend E2E pendientes)
 - [ ] Slice 1.4 completo (métricas básicas implementadas; pruebas manuales en Docker pendientes)
-- [x] Slice 6 completo (esquema de pagos/facturación por tenant, crypto y config API; validación manual pendiente)
-- [ ] Slice 7 completo (arquitectura Strategy de pagos y facturación)
+- [x] Slice 6 completo (esquema de pagos/facturación por tenant, crypto y config API; evidencia de validación manual ejecutada, pendiente de confirmación)
+- [x] Slice 7 completo (arquitectura Strategy de pagos y facturación: interfaces, contexts, registry y 8 tests con estrategias fake; validación manual pendiente)
 - [ ] Slice 8 completo (checkout con Libélula)
 - [ ] Slice 9 completo (webhook de pagos y orquestación de facturación FactElec)
 - [ ] Slice 10 completo (frontend de checkout y estado de pago)
 - [ ] Slice 11 completo (conciliación y consulta de pagos — posterior)
-- [ ] Próximo slice activo: validar Slice 5 en Docker (dashboard, descuentos, notificaciones, clientes, import/export) y los slices anteriores pendientes de validación manual; Slice 6 quedó implementado, falta su validación manual (credenciales cifradas en BD, API sin appkey completo, 403 cross-tenant). Resolver después el drift histórico de `prisma migrate dev` y arrancar el Slice 7 (estrategias de pago/facturación). SEO y analítica avanzada quedan para el tramo final
-- [x] Última actualización: Slice 6 implementado — migración `add_payment_billing_config` (enums, `TenantPaymentConfig`, `TenantBillingConfig`, campos de conciliación en `Order`), crypto AES-256-GCM, API de configuración tenant-scoped con permiso `settings`, 19 pruebas nuevas (105 totales), builds y lint OK. La migración se aplicó con `migrate deploy` porque `migrate dev` detecta drift histórico y pide reset
+- [ ] Próximo slice activo: Slice 8 (checkout con Libélula: `LibelulaPaymentStrategy`, `POST /api/checkout`, `customerEmail` en Order e idempotencia); confirmar con el usuario la validación manual del Slice 6 (evidencia arriba) y resolver después el drift histórico de `prisma migrate dev`. Validación manual de Slices 0–5 en Docker pendiente. SEO y analítica avanzada quedan para el tramo final
+- [x] Última actualización: Slice 7 implementado — `payment-types.ts`, `payment-strategy.ts` (interfaces + registry) y `payment-context.ts` (`PaymentContext`/`BillingContext`) en `modules/payments`, loaders con credenciales descifradas en `payment-config.service.ts`, 8 tests nuevos (113 totales), builds y lint OK; Slice 6 validado manualmente en Docker con evidencia (BD cifrada, masks, 403, cross-tenant aislado)
 
 Cuando el usuario solicite **"Actualizar progreso"**, comparar este checklist con el código actual y con la evidencia proporcionada. Cuando solicite **"Continuar con el Slice #"**, trabajar únicamente en ese slice, mantener los contratos anteriores y actualizar esta sección al terminar.

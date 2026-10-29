@@ -2,6 +2,7 @@ import { BillingProviderType, PaymentGatewayType } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { AppError } from '@/lib/errors';
 import { decryptSecret, encryptSecret, maskSecret } from '@/lib/crypto';
+import type { BillingProviderCredentials, PaymentGatewayCredentials } from './payment-types';
 
 export type PaymentConfigView = {
   id: string;
@@ -173,4 +174,37 @@ export const saveBillingConfig = async (
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
+};
+
+export const getActivePaymentCredentials = async (
+  tenantId: string
+): Promise<PaymentGatewayCredentials | null> => {
+  const row = await prisma.tenantPaymentConfig.findFirst({
+    where: { tenantId, isActive: true },
+    orderBy: { gateway: 'asc' },
+  });
+
+  if (!row) return null;
+
+  return { gateway: row.gateway, appkey: decryptSecret(row.appkeyEncrypted) };
+};
+
+export const getActiveBillingCredentials = async (
+  tenantId: string
+): Promise<BillingProviderCredentials | null> => {
+  const row = await prisma.tenantBillingConfig.findFirst({
+    where: { tenantId, isEnabled: true, provider: { not: 'LIBELULA_NATIVE' } },
+    orderBy: { provider: 'asc' },
+  });
+
+  if (!row) return null;
+
+  const credentials: Record<string, string> = {};
+  for (const [key, value] of Object.entries(row.credentialsEncrypted as Record<string, unknown>)) {
+    if (typeof value === 'string') {
+      credentials[key] = decryptSecret(value);
+    }
+  }
+
+  return { provider: row.provider, credentials };
 };
