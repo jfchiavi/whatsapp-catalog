@@ -378,6 +378,7 @@ model Order {
   representativeId String?
   customerName     String
   customerPhone    String
+  customerEmail    String?
   customerNotes    String?
   status           String   @default("pending") // pending | contacted | confirmed | completed | cancelled
   totalSnapshot    Float
@@ -385,6 +386,8 @@ model Order {
   whatsappUrl      String
   gatewayTransactionId String?  @unique
   gatewayStatus        String?  // initiated | paid | failed
+  gatewayQrUrl         String?
+  gatewayPaymentUrl    String?
   billingInvoiceId     String?
   billingInvoiceUrl    String?
   createdAt        DateTime @default(now())

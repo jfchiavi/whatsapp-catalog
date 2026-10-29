@@ -597,28 +597,43 @@ Crear las abstracciones `IPaymentStrategy`/`IBillingStrategy` y los contextos qu
 
 Inicializar un pago Libélula para una orden existente, registrar la transacción en la orden y devolver el QR/link de pago al cliente, con tenant resuelto en servidor.
 
+### Decisiones de contrato
+
+- Además de `customerEmail`, la idempotencia del reintento requiere redevolver el mismo QR/link: se agregan `Order.gatewayQrUrl` y `Order.gatewayPaymentUrl` (migración `20261028120000_add_checkout_order_fields`).
+- El `callback_url` del webhook se construye con `APP_BASE_URL` (agregada a `backend/.env`, `.env.docker` y `backend/.env.production`); en despliegues reales debe apuntar al host público del backend.
+- `LibelulaPaymentStrategy` se registra en el registry mediante `registerBuiltinStrategies()` (idempotente), manteniendo el patrón de registro del Slice 7.
+
 ### Checks de implementación
 
 #### Backend — LibelulaPaymentStrategy
-- [ ] `LibelulaPaymentStrategy implements IPaymentStrategy`: `POST https://api.libelula.bo/rest/deuda/registrar` con `appkey` descifrado de la config del tenant.
-- [ ] Mapeo de payload: `identificador_deuda` = `order.id`, `email_cliente` (requerido por Libélula), `nombre_cliente`, `ci`/`nit`/`razon_social` cuando existan, `moneda` y `lineas_detalle_deuda` desde `OrderItem` (concepto, cantidad, costo_unitario).
-- [ ] `callback_url` dinámico hacia `GET /api/webhooks/payments/libelula` (base URL desde env `APP_BASE_URL`).
-- [ ] Capturar y tipar la respuesta: `id_transaccion` → `Order.gatewayTransactionId`; devolver `qr_simple_url` y `url_pasarela_pagos` al cliente; `error: true` de Libélula se maneja como error de pasarela con logs sin credenciales.
+- [x] `LibelulaPaymentStrategy implements IPaymentStrategy`: `POST https://api.libelula.bo/rest/deuda/registrar` con `appkey` descifrado de la config del tenant.
+- [x] Mapeo de payload: `identificador_deuda` = `order.id`, `email_cliente` (requerido por Libélula, con guard `CUSTOMER_EMAIL_REQUIRED`), `nombre_cliente`, `nit`/`razon_social` cuando existan, `moneda: BOB` y `lineas_detalle_deuda` desde los ítems (concepto = producto + SKU, cantidad, costo_unitario).
+- [x] `callback_url` dinámico hacia `GET /api/webhooks/payments/libelula` (base URL desde env `APP_BASE_URL`; error `APP_BASE_URL_MISSING` si falta).
+- [x] Capturar y tipar la respuesta: `id_transaccion` → `Order.gatewayTransactionId`; `qr_simple_url` → `qrUrl` y `url_pasarela_pagos` → `paymentUrl`; `error: true` o `!ok` → `GATEWAY_ERROR`/`GATEWAY_UNREACHABLE` (502) con logs sin credenciales.
 
 #### Backend — Checkout
-- [ ] Agregar `customerEmail` snapshot a `Order` (migración), consistente con `customerName`/`customerPhone`; validado con Zod en el checkout.
-- [ ] `POST /api/checkout` (público, resuelve tenant con `resolveTenant` por subdominio/`X-Tenant-ID`; NO acepta tenantId del body): valida orden perteneciente al tenant, estado pagable y datos requeridos (email).
-- [ ] Invoca `PaymentContext.createPayment`, actualiza `gatewayTransactionId`/`gatewayStatus` (`initiated`) en transacción y retorna `{ qrUrl, paymentUrl, gatewayTransactionId }` en el envelope.
-- [ ] Reintento de checkout idempotente: si la orden ya tiene transacción `initiated` vigente, retorna los mismos datos en vez de registrar otra deuda en Libélula.
+- [x] `customerEmail` snapshot a `Order` (migración `20261028120000_add_checkout_order_fields`), validado con Zod (`validators/checkout.schema.ts`, uuid + email) en el checkout.
+- [x] `POST /api/checkout` (público, resuelve tenant con `resolveTenant` por `X-Tenant-ID`; NO acepta tenantId del body): valida orden perteneciente al tenant (`ORDER_NOT_FOUND` 404), estado pagable (`pending|contacted|confirmed` → `ORDER_NOT_PAYABLE`; `gatewayStatus = paid` → `ORDER_ALREADY_PAID`) y email.
+- [x] Invoca `PaymentContext.createPayment`, actualiza `customerEmail`, `gatewayTransactionId`, `gatewayStatus` (`initiated`) y QR/link en la orden, y retorna `{ orderId, customerEmail, gatewayTransactionId, qrUrl, paymentUrl, gatewayStatus }` en el envelope.
+- [x] Reintento de checkout idempotente: si la orden ya tiene transacción `initiated` vigente, retorna los mismos datos sin registrar otra deuda.
 
 #### Tests
-- [ ] `backend/tests/checkout.test.ts` con `fetch` mockeado: payload exacto a Libélula, descifrado del appkey, actualización de la orden, idempotencia del reintento, aislamiento cross-tenant y rechazo sin config activa.
+- [x] `backend/tests/checkout.test.ts` con `fetch` mockeado: payload exacto a Libélula (URL, método, appkey descifrada, callback, líneas), actualización de la orden, idempotencia del reintento (un solo `fetch`), aislamiento cross-tenant (404 sin tocar la pasarela), rechazo sin config activa, validación de tenant/email, estados no pagables y rechazo de pasarela (502 sin persistir) — 8 pruebas pasan.
+
+### Verificación ejecutada
+
+- `npx vitest run`: 14 archivos, 121 pruebas pasan.
+- `npx tsc --noEmit` sin errores; `npm run build` de Next.js compila (`/api/checkout` registrada); ESLint focalizado sin errores.
+- `npx prisma migrate status`: 9 migraciones; `prisma migrate diff --from-url ... --to-schema-datamodel` vacío (BD exactamente igual al schema).
+- Smoke test en Docker (imagen reconstruida): `POST /api/checkout` sin tenant → `401`, body inválido → `400 VALIDATION_ERROR`, orden inexistente → `404 ORDER_NOT_FOUND`.
 
 ### Checks de validación manual
 
 - [ ] Registrar un pago sandbox y confirmar que la orden queda con `gatewayTransactionId` y `gatewayStatus = initiated`.
 - [ ] Reintentar el checkout de la misma orden y verificar que no se crea una segunda deuda en Libélula.
 - [ ] Confirmar que un checkout con `X-Tenant-ID` de otro tenant devuelve error y no toca la orden.
+
+> Requiere una `appkey` sandbox real de Libélula y una orden de prueba; el reintento y el aislamiento cross-tenant ya están cubiertos por `tests/checkout.test.ts`, y el route handler responde `401/400/404` correctamente en Docker.
 
 ---
 
@@ -718,11 +733,11 @@ Actualizar esta sección después de cada sesión de trabajo. `[x]` requiere evi
 - [ ] Slice 1.4 completo (métricas básicas implementadas; pruebas manuales en Docker pendientes)
 - [x] Slice 6 completo (esquema de pagos/facturación por tenant, crypto y config API; evidencia de validación manual ejecutada, pendiente de confirmación)
 - [x] Slice 7 completo (arquitectura Strategy de pagos y facturación: interfaces, contexts, registry y 8 tests con estrategias fake; validación manual pendiente)
-- [ ] Slice 8 completo (checkout con Libélula)
+- [x] Slice 8 completo (checkout con Libélula: estrategia, `POST /api/checkout`, idempotencia y 8 tests con fetch mockeado; validación sandbox manual pendiente)
 - [ ] Slice 9 completo (webhook de pagos y orquestación de facturación FactElec)
 - [ ] Slice 10 completo (frontend de checkout y estado de pago)
 - [ ] Slice 11 completo (conciliación y consulta de pagos — posterior)
-- [ ] Próximo slice activo: Slice 8 (checkout con Libélula: `LibelulaPaymentStrategy`, `POST /api/checkout`, `customerEmail` en Order e idempotencia); confirmar con el usuario la validación manual del Slice 6 (evidencia arriba) y resolver después el drift histórico de `prisma migrate dev`. Validación manual de Slices 0–5 en Docker pendiente. SEO y analítica avanzada quedan para el tramo final
-- [x] Última actualización: Slice 7 implementado — `payment-types.ts`, `payment-strategy.ts` (interfaces + registry) y `payment-context.ts` (`PaymentContext`/`BillingContext`) en `modules/payments`, loaders con credenciales descifradas en `payment-config.service.ts`, 8 tests nuevos (113 totales), builds y lint OK; Slice 6 validado manualmente en Docker con evidencia (BD cifrada, masks, 403, cross-tenant aislado)
+- [ ] Próximo slice activo: Slice 9 (webhook `GET /api/webhooks/payments/:gateway`, confirmación idempotente de orden y `FactElecBillingStrategy`); pendientes de usuario: confirmar la validación manual del Slice 6, probar sandbox de Libélula para el Slice 8 (requiere appkey real) y resolver el drift histórico de `prisma migrate dev`. Validación manual de Slices 0–5 en Docker pendiente. SEO y analítica avanzada quedan para el tramo final
+- [x] Última actualización: Slice 8 implementado — migración `add_checkout_order_fields` (`customerEmail`, `gatewayQrUrl`, `gatewayPaymentUrl`), `LibelulaPaymentStrategy` + `registerBuiltinStrategies`, `checkout.service.ts` con idempotencia, `POST /api/checkout` público con `resolveTenant`, env `APP_BASE_URL`, 8 tests nuevos (121 totales), builds/lint/migrate OK y smoke test en Docker
 
 Cuando el usuario solicite **"Actualizar progreso"**, comparar este checklist con el código actual y con la evidencia proporcionada. Cuando solicite **"Continuar con el Slice #"**, trabajar únicamente en ese slice, mantener los contratos anteriores y actualizar esta sección al terminar.
