@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { NextRequest } from 'next/server';
 import { prisma } from '../src/lib/prisma';
 import {
   createVariant,
@@ -8,6 +9,7 @@ import {
   deleteVariant,
 } from '../src/modules/variants/variant.service';
 import { getCatalogProducts, getCatalogProductById } from '../src/modules/catalog/catalog.service';
+import { GET as getCatalogBranchesRoute } from '../src/app/api/catalog/branches/route';
 import { AppError } from '../src/lib/errors';
 
 // Seed UUIDs from seed-docker.sql
@@ -207,5 +209,28 @@ describe('Catalog service (public, no auth)', () => {
     // Cleanup
     await prisma.product.delete({ where: { id: otherProduct.id } });
     await prisma.tenant.delete({ where: { id: otherTenant.id } });
+  });
+});
+
+describe('Public catalog branches route', () => {
+  it('lists active branches with only X-Tenant-ID (no auth)', async () => {
+    const req = new NextRequest('http://localhost/api/catalog/branches', {
+      headers: { 'X-Tenant-ID': TEST_TENANT_ID },
+    });
+    const res = await getCatalogBranchesRoute(req);
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.success).toBe(true);
+    expect(Array.isArray(body.data)).toBe(true);
+    expect(body.data.length).toBeGreaterThan(0);
+    expect(body.data[0]).toHaveProperty('name');
+    expect(body.data[0]).not.toHaveProperty('tenantId');
+  });
+
+  it('returns 401 without tenant header', async () => {
+    const req = new NextRequest('http://localhost/api/catalog/branches');
+    const res = await getCatalogBranchesRoute(req);
+    expect(res.status).toBe(401);
   });
 });

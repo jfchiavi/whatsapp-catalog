@@ -168,3 +168,57 @@ describe('Cart service', () => {
     });
   });
 });
+
+describe('getOrCreateCart lifecycle (expired and submitted carts)', () => {
+  const expiredSession = `expired-session-${Date.now()}`;
+  const submittedSession = `submitted-session-${Date.now()}`;
+
+  afterAll(async () => {
+    await prisma.cart.deleteMany({
+      where: { tenantId: TEST_TENANT_ID, sessionId: { in: [expiredSession, submittedSession] } },
+    });
+    await prisma.$disconnect();
+  });
+
+  it('reactivates an expired active cart instead of failing with a unique violation', async () => {
+    const cart = await getOrCreateCart(TEST_TENANT_ID, expiredSession);
+    expect(cart.status).toBe('active');
+
+    await prisma.cart.update({
+      where: { id: cart.id },
+      data: { expiresAt: new Date(Date.now() - 1000) },
+    });
+
+    const reactivated = await getOrCreateCart(TEST_TENANT_ID, expiredSession);
+    expect(reactivated.id).toBe(cart.id);
+    expect(reactivated.status).toBe('active');
+    expect(reactivated.expiresAt.getTime()).toBeGreaterThan(Date.now());
+  });
+
+  it('creates a fresh cart after the previous one was submitted', async () => {
+    const cart = await getOrCreateCart(TEST_TENANT_ID, submittedSession);
+    await prisma.cart.update({ where: { id: cart.id }, data: { status: 'submitted' } });
+
+    const fresh = await getOrCreateCart(TEST_TENANT_ID, submittedSession);
+    expect(fresh.id).not.toBe(cart.id);
+    expect(fresh.status).toBe('active');
+    expect(fresh.items).toHaveLength(0);
+
+    const old = await prisma.cart.findUnique({ where: { id: cart.id } });
+    expect(old).toBeNull();
+  });
+
+  it('tolerates concurrent creation for the same session', async () => {
+    const session = `race-session-${Date.now()}`;
+    const results = await Promise.all([
+      getOrCreateCart(TEST_TENANT_ID, session),
+      getOrCreateCart(TEST_TENANT_ID, session),
+      getOrCreateCart(TEST_TENANT_ID, session),
+    ]);
+
+    const ids = new Set(results.map((cart) => cart.id));
+    expect(ids.size).toBe(1);
+
+    await prisma.cart.deleteMany({ where: { tenantId: TEST_TENANT_ID, sessionId: session } });
+  });
+});

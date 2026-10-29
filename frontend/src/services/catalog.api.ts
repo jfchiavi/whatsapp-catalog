@@ -5,8 +5,22 @@ const catalogApi = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
 });
 
+export interface PublicBranchData {
+  id: string;
+  name: string;
+  address: string | null;
+  hours: string | null;
+}
+
 export const getCatalogProducts = async (tenantId: string): Promise<Product[]> => {
   const { data } = await catalogApi.get('/catalog/products', {
+    headers: { 'X-Tenant-ID': tenantId },
+  });
+  return data.data;
+};
+
+export const getCatalogBranches = async (tenantId: string): Promise<PublicBranchData[]> => {
+  const { data } = await catalogApi.get('/catalog/branches', {
     headers: { 'X-Tenant-ID': tenantId },
   });
   return data.data;

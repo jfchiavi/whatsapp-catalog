@@ -5,52 +5,75 @@ import { findOrCreateCustomer } from '@/modules/customers/customers.service';
 
 const CART_EXPIRY_HOURS = 24;
 
+const cartInclude = {
+  items: {
+    include: {
+      variant: {
+        include: { product: true },
+      },
+    },
+  },
+  branch: {
+    include: { tenant: true },
+  },
+} as const;
+
 export const getOrCreateCart = async (tenantId: string, sessionId: string) => {
-  let cart = await prisma.cart.findFirst({
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + CART_EXPIRY_HOURS * 60 * 60 * 1000);
+
+  const activeCart = await prisma.cart.findFirst({
     where: {
       tenantId,
       sessionId,
       status: 'active',
-      expiresAt: { gt: new Date() },
+      expiresAt: { gt: now },
     },
-    include: {
-      items: {
-        include: {
-          variant: {
-            include: { product: true },
-          },
-        },
-      },
-      branch: {
-        include: { tenant: true },
-      },
-    },
+    include: cartInclude,
   });
 
-  if (!cart) {
-    cart = await prisma.cart.create({
+  if (activeCart) return activeCart;
+
+  const existing = await prisma.cart.findFirst({
+    where: { tenantId, sessionId },
+    include: cartInclude,
+  });
+
+  // Carrito existente que expiró pero sigue "active": se reactiva
+  // conservando sus items (mismo (tenantId, sessionId), sin violar la unique).
+  if (existing && existing.status === 'active') {
+    return prisma.cart.update({
+      where: { id: existing.id },
+      data: { status: 'active', expiresAt },
+      include: cartInclude,
+    });
+  }
+
+  // Carts enviados/abandonados ocupan la unique (tenantId, sessionId):
+  // se eliminan para poder crear el carrito nuevo del visitante.
+  if (existing) {
+    await prisma.cart.delete({ where: { id: existing.id } });
+  }
+
+  try {
+    return await prisma.cart.create({
       data: {
         tenantId,
         sessionId,
         status: 'active',
-        expiresAt: new Date(Date.now() + CART_EXPIRY_HOURS * 60 * 60 * 1000),
+        expiresAt,
       },
-      include: {
-        items: {
-          include: {
-            variant: {
-              include: { product: true },
-            },
-          },
-        },
-        branch: {
-          include: { tenant: true },
-        },
-      },
+      include: cartInclude,
     });
+  } catch (error) {
+    // Carrera concurrente: otro request creó el mismo carrito; devolver el existente.
+    const raced = await prisma.cart.findFirst({
+      where: { tenantId, sessionId },
+      include: cartInclude,
+    });
+    if (raced) return raced;
+    throw error;
   }
-
-  return cart;
 };
 
 export const addToCart = async (

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getCatalogProducts, getCatalogProductById } from '@/services/catalog.api';
+import { getCatalogProducts, getCatalogProductById, getCatalogBranches } from '@/services/catalog.api';
 import { useTenant } from './useTenant';
 
 export const useCatalogProducts = () => {
@@ -9,6 +9,17 @@ export const useCatalogProducts = () => {
     queryKey: ['catalog-products', tenant?.id],
     queryFn: () => getCatalogProducts(tenant!.id),
     enabled: !tenantLoading && !!tenant?.id,
+  });
+};
+
+export const useCatalogBranches = () => {
+  const { tenant, loading: tenantLoading } = useTenant();
+
+  return useQuery({
+    queryKey: ['catalog-branches', tenant?.id],
+    queryFn: () => getCatalogBranches(tenant!.id),
+    enabled: !tenantLoading && !!tenant?.id,
+    staleTime: 60_000,
   });
 };
 

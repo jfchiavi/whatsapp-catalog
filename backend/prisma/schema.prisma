@@ -41,6 +41,16 @@ enum DiscountType {
   FIXED
 }
 
+enum PaymentGatewayType {
+  LIBELULA
+  CUCU
+}
+
+enum BillingProviderType {
+  FACTELEC
+  LIBELULA_NATIVE
+}
+
 model Tenant {
   id             String   @id @default(uuid())
   name           String
@@ -73,6 +83,36 @@ model Tenant {
   auditLogs      AuditLog[]
   notifications  Notification[]
   discounts      Discount[]
+  paymentConfigs TenantPaymentConfig[]
+  billingConfigs TenantBillingConfig[]
+}
+
+model TenantPaymentConfig {
+  id              String              @id @default(uuid())
+  tenantId        String
+  tenant          Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  gateway         PaymentGatewayType
+  appkeyEncrypted String
+  isActive        Boolean             @default(true)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@unique([tenantId, gateway])
+  @@index([tenantId, isActive])
+}
+
+model TenantBillingConfig {
+  id                   String              @id @default(uuid())
+  tenantId             String
+  tenant               Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  provider             BillingProviderType
+  credentialsEncrypted Json
+  isEnabled            Boolean             @default(false)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  @@unique([tenantId, provider])
+  @@index([tenantId, isEnabled])
 }
 
 model TenantHomePage {
@@ -343,6 +383,10 @@ model Order {
   totalSnapshot    Float
   whatsappMessage  String
   whatsappUrl      String
+  gatewayTransactionId String?  @unique
+  gatewayStatus        String?  // initiated | paid | failed
+  billingInvoiceId     String?
+  billingInvoiceUrl    String?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
   items            OrderItem[]

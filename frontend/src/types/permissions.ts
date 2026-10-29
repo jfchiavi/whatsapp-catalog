@@ -12,4 +12,5 @@ export type Permission =
   | 'notifications'
   | 'discounts'
   | 'customers'
-  | 'import_export';
+  | 'import_export'
+  | 'settings';

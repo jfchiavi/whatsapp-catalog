@@ -30,6 +30,7 @@ export const rolePermissions: Record<Role, string[]> = {
     'discounts',
     'customers',
     'import_export',
+    'settings',
   ],
   BRANCH_MANAGER: [
     'dashboard',

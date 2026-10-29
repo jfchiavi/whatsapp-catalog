@@ -18,16 +18,20 @@ export const useCart = (tenantId: string | null, sessionId: string | null) => {
     queryKey: ['cart', tenantId, sessionId],
     queryFn: async () => {
       if (!tenantId || !sessionId) return null;
-      try {
-        return await getCart(
-          localStorage.getItem(`cart-id-${tenantId}`) || '',
-          tenantId
-        );
-      } catch {
-        const cart = await createCart(tenantId, sessionId);
-        localStorage.setItem(`cart-id-${tenantId}`, cart.id);
-        return cart;
+
+      const storedCartId = localStorage.getItem(`cart-id-${tenantId}`) || '';
+      if (storedCartId) {
+        try {
+          return await getCart(storedCartId, tenantId);
+        } catch {
+          // Carrito expirado o eliminado: limpiar el id y crear uno nuevo.
+          localStorage.removeItem(`cart-id-${tenantId}`);
+        }
       }
+
+      const cart = await createCart(tenantId, sessionId);
+      localStorage.setItem(`cart-id-${tenantId}`, cart.id);
+      return cart;
     },
     enabled: !!tenantId && !!sessionId,
     staleTime: 30000,

@@ -36,3 +36,20 @@ export const getCatalogProductById = async (id: string, tenantId: string) => {
 
   return product;
 };
+
+export const getCatalogBranches = async (tenantId: string) => {
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { id: true },
+  });
+
+  if (!tenant) {
+    throw new AppError('Tenant not found', 404, 'NOT_FOUND');
+  }
+
+  return prisma.branch.findMany({
+    where: { tenantId, active: true },
+    select: { id: true, name: true, address: true, hours: true },
+    orderBy: { name: 'asc' },
+  });
+};

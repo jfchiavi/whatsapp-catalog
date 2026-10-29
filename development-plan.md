@@ -500,6 +500,200 @@ Dashboard completo con métricas, alertas, import/export, descuentos, auditoría
 
 ---
 
+## Slice 6: Esquema de pagos y facturación por tenant
+
+> Fuente: `plan-pagos-impl.md` Etapa 1; credenciales por tenant según `PAGOS-BO.md`.
+
+### Objetivo
+
+Preparar el esquema multitenant para pasarelas de pago y facturación desacopladas: configuración cifrada por tenant, campos de conciliación en `Order` y utilidad de criptografía para credenciales.
+
+### Decisiones de contrato
+
+- `Order.status` sigue representando el estado comercial (`pending|contacted|confirmed|completed|cancelled`); el estado del pago se guarda en `gatewayStatus` (`initiated|paid|failed`) para no romper el flujo WhatsApp existente.
+- Credenciales de pasarela/facturación se almacenan cifradas (AES-256-GCM, key desde `PAYMENTS_ENCRYPTION_KEY`); nunca en claro ni en logs ni en respuestas API.
+- Un tenant puede tener varias filas de `TenantPaymentConfig` (una por gateway) pero solo una activa a la vez, validada en el servicio.
+
+### Checks de implementación
+
+#### Schema
+- [x] Enums `PaymentGatewayType { LIBELULA, CUCU }` y `BillingProviderType { FACTELEC, LIBELULA_NATIVE }`.
+- [x] Modelo `TenantPaymentConfig` (id uuid, tenantId, gateway, appkeyEncrypted, isActive, timestamps) con `@@unique([tenantId, gateway])` y relación a `Tenant`.
+- [x] Modelo `TenantBillingConfig` (id uuid, tenantId, provider, credentialsEncrypted Json, isEnabled, timestamps) con `@@unique([tenantId, provider])` y relación a `Tenant`.
+- [x] Extender `Order` con `gatewayTransactionId` (índice único), `gatewayStatus`, `billingInvoiceId`, `billingInvoiceUrl` (todos opcionales).
+- [x] Migración versionada `20261028090000_add_payment_billing_config` + `prisma generate`; nunca `db push`.
+
+#### Backend
+- [x] `backend/src/lib/crypto.ts`: `encryptSecret`/`decryptSecret` AES-256-GCM con `PAYMENTS_ENCRYPTION_KEY` (64 hex) y error claro si falta la env (`PAYMENTS_ENCRYPTION_KEY_MISSING`/`_INVALID`), más `maskSecret`.
+- [x] API de configuración tenant-scoped derivando tenant del JWT (no acepta tenantId del body): `GET/PUT /api/tenants/payment-config` y `GET/PUT /api/tenants/billing-config` con Zod (`validators/payment-config.schema.ts`) y contrato `success/data/error`.
+- [x] Al guardar: valida que solo una config de pago quede activa por tenant (transacción), cifra credenciales antes de persistir (por valor en billing) y redacta appkey/credenciales en respuestas (solo máscara `****xxxx`).
+- [x] Permiso `settings` agregado solo a ADMIN (backend `lib/permissions.ts` y frontend `config/rolePermissions.ts`/`types/permissions.ts`); el SUPER_ADMIN no gestiona credenciales de tenants.
+
+#### Tests
+- [x] `backend/tests/payment-config.test.ts`: roundtrip encrypt/decrypt (más payload alterado y env faltante), CRUD de payment/billing, aislamiento cross-tenant, unicidad `(tenantId, gateway)`, una sola config activa por tenant, rutas con JWT (tenant del token, 403 para SELLER/SUPER_ADMIN, 400 por validación) — 19 pruebas pasan.
+
+### Verificación ejecutada
+
+- `npx vitest run` en backend: 12 archivos, 105 pruebas pasan (incluye las 19 del slice).
+- `npx tsc --noEmit` en backend sin errores; `npm run build` de Next.js compila y registra `/api/tenants/payment-config` y `/api/tenants/billing-config`.
+- ESLint focalizado de los archivos nuevos/modificados (backend y frontend) sin errores; `npm run build` de frontend correcto.
+- `npx prisma migrate status`: 8 migraciones, base sincronizada.
+- Nota: `prisma migrate dev` detecta drift histórico (schema actual vs. migraciones más antiguas) y propone resetear la base; la migración de este slice se generó con `prisma migrate diff --from-schema-datamodel` (schema HEAD → schema actual) y se aplicó con `npx prisma migrate deploy`, sin resetear datos. El drift histórico sigue pendiente de resolver en una tarea dedicada.
+- La env `PAYMENTS_ENCRYPTION_KEY` (64 hex) se agregó a `backend/.env`, `.env.docker` y `backend/.env.production` (archivos locales, gitignored).
+
+### Checks de validación manual
+
+- [ ] Configurar credenciales Libélula de un tenant y verificar que se guardan cifradas en BD y la API nunca devuelve el appkey completo.
+- [ ] Intentar leer o escribir la config de otro tenant y confirmar `403` o lista vacía.
+
+---
+
+## Slice 7: Arquitectura Strategy de pagos y facturación
+
+> Fuente: `plan-pagos-impl.md` Etapa 2.
+
+### Objetivo
+
+Crear las abstracciones `IPaymentStrategy`/`IBillingStrategy` y los contextos que resuelven la estrategia activa por tenant, de modo que ningún controlador o servicio de aplicación conozca Libélula ni FactElec.
+
+### Decisiones de contrato
+
+- Las interfaces y contextos viven en `backend/src/modules/payments/` (no en `/src/interfaces` y `/src/strategies` de la raíz) para seguir la estructura de módulos de AGENTS.md.
+- Los contextos se implementan como funciones/fábricas con tipado estricto, consistente con el estilo de servicios existentes; las estrategias concretas pueden ser clases que implementen las interfaces.
+
+### Checks de implementación
+
+#### Interfaces
+- [ ] `IPaymentStrategy` con `createPayment(order, config)` → `{ gatewayTransactionId, qrUrl?, paymentUrl?, status }` y `processWebhook(params)` → resultado tipado.
+- [ ] `IBillingStrategy` con `emitInvoice(order, config)` → `{ invoiceId, invoiceUrl }`.
+- [ ] Tipos de dominio para configs y resultados, sin `any`.
+
+#### Contextos
+- [ ] `PaymentContext`: recibe `tenantId`, carga `TenantPaymentConfig` activa y delega en la estrategia del gateway; error `PAYMENT_NOT_CONFIGURED` si no hay config activa.
+- [ ] `BillingContext`: si `TenantBillingConfig.isEnabled` es falso o el provider es `LIBELULA_NATIVE`, ejecuta no-op (la facturación nativa la resuelve Libélula en el webhook); si está habilitado, instancia la estrategia correspondiente.
+- [ ] Registry de estrategias: mapa `PaymentGatewayType → IPaymentStrategy` y `BillingProviderType → IBillingStrategy` para agregar proveedores solo registrándolos.
+
+#### Tests
+- [ ] `backend/tests/payment-strategies.test.ts` con estrategias fake: resolución por tenant, error sin config activa, no-op de facturación y registro de un proveedor ficticio (stub CUCU) sin tocar el resto.
+
+### Checks de validación manual
+
+- [ ] Verificar con logs de desarrollo que un checkout inexistente produce `PAYMENT_NOT_CONFIGURED` y no un error 500 opaco.
+
+---
+
+## Slice 8: Checkout de pago con Libélula
+
+> Fuente: `plan-pagos-impl.md` Etapa 3 + controlador de Etapa 4; API real en `libelula_documentation.md` §1.
+
+### Objetivo
+
+Inicializar un pago Libélula para una orden existente, registrar la transacción en la orden y devolver el QR/link de pago al cliente, con tenant resuelto en servidor.
+
+### Checks de implementación
+
+#### Backend — LibelulaPaymentStrategy
+- [ ] `LibelulaPaymentStrategy implements IPaymentStrategy`: `POST https://api.libelula.bo/rest/deuda/registrar` con `appkey` descifrado de la config del tenant.
+- [ ] Mapeo de payload: `identificador_deuda` = `order.id`, `email_cliente` (requerido por Libélula), `nombre_cliente`, `ci`/`nit`/`razon_social` cuando existan, `moneda` y `lineas_detalle_deuda` desde `OrderItem` (concepto, cantidad, costo_unitario).
+- [ ] `callback_url` dinámico hacia `GET /api/webhooks/payments/libelula` (base URL desde env `APP_BASE_URL`).
+- [ ] Capturar y tipar la respuesta: `id_transaccion` → `Order.gatewayTransactionId`; devolver `qr_simple_url` y `url_pasarela_pagos` al cliente; `error: true` de Libélula se maneja como error de pasarela con logs sin credenciales.
+
+#### Backend — Checkout
+- [ ] Agregar `customerEmail` snapshot a `Order` (migración), consistente con `customerName`/`customerPhone`; validado con Zod en el checkout.
+- [ ] `POST /api/checkout` (público, resuelve tenant con `resolveTenant` por subdominio/`X-Tenant-ID`; NO acepta tenantId del body): valida orden perteneciente al tenant, estado pagable y datos requeridos (email).
+- [ ] Invoca `PaymentContext.createPayment`, actualiza `gatewayTransactionId`/`gatewayStatus` (`initiated`) en transacción y retorna `{ qrUrl, paymentUrl, gatewayTransactionId }` en el envelope.
+- [ ] Reintento de checkout idempotente: si la orden ya tiene transacción `initiated` vigente, retorna los mismos datos en vez de registrar otra deuda en Libélula.
+
+#### Tests
+- [ ] `backend/tests/checkout.test.ts` con `fetch` mockeado: payload exacto a Libélula, descifrado del appkey, actualización de la orden, idempotencia del reintento, aislamiento cross-tenant y rechazo sin config activa.
+
+### Checks de validación manual
+
+- [ ] Registrar un pago sandbox y confirmar que la orden queda con `gatewayTransactionId` y `gatewayStatus = initiated`.
+- [ ] Reintentar el checkout de la misma orden y verificar que no se crea una segunda deuda en Libélula.
+- [ ] Confirmar que un checkout con `X-Tenant-ID` de otro tenant devuelve error y no toca la orden.
+
+---
+
+## Slice 9: Webhook de pagos y orquestación de facturación
+
+> Fuente: `plan-pagos-impl.md` Etapa 3 (FactElec) y Etapa 4; webhook Libélula en `libelula_documentation.md` §2; contrato FactElec en `FactElec.md`.
+
+### Objetivo
+
+Confirmar pagos de forma desacoplada vía webhook global por gateway, con idempotencia, y disparar facturación electrónica según la configuración del tenant.
+
+### Checks de implementación
+
+#### Backend — Webhook
+- [ ] `GET /api/webhooks/payments/:gateway` (público): valida `:gateway` contra `PaymentGatewayType`; para Libélula lee `transaction_id`, `invoice_id`, `invoice_url` del query string.
+- [ ] Transacción Prisma: buscar orden por `gatewayTransactionId`, verificar pertenencia a un tenant activo e idempotencia (no reprocesar órdenes ya pagadas); actualizar `gatewayStatus = 'paid'`, guardar la factura nativa de Libélula si viene en el query y ejecutar la confirmación existente de la orden (descuento de stock + `Sale`) sin duplicarla.
+- [ ] Orquestación de facturación asíncrona (post-commit, fuera de la respuesta HTTP): si el tenant tiene FactElec habilitado, invocar `BillingContext.emitInvoice` y persistir `billingInvoiceId`/`billingInvoiceUrl`; si falla, log descriptivo + estado de reintento sin bloquear el `200`.
+- [ ] Responder siempre `200` con cuerpo `"OK"` en entregas válidas; `400` solo para gateway desconocido o payload ilegible.
+
+#### Backend — FactElecBillingStrategy
+- [ ] `FactElecBillingStrategy implements IBillingStrategy`: `fetch` POST a `https://api.factelec-api.com/api/v1/facturas` con header `x-api-token` desde `TenantBillingConfig.credentialsEncrypted` (descifrado) y payload `cliente` (nombreRazonSocial, numeroDocumento, codigoTipoDocumento), `codigoMetodoPago` y `detalles[]` (codigoProductoSin, codigoProducto=SKU, descripcion, cantidad, precioUnitario, subTotal) desde `OrderItem`.
+- [ ] Capturar la respuesta `data.cuf` (y PDF/URL si está disponible en el contrato) → `billingInvoiceId`/`billingInvoiceUrl`.
+- [ ] Agregar `codigoProductoSin` opcional a `Variant` (migración + campo en formularios de variante); requerido solo cuando FactElec está habilitado para el tenant.
+- [ ] Registrar `LIBELULA` y `FACTELEC` en los contextos; `LIBELULA_NATIVE` resuelve el no-op (el webhook de Libélula ya trae `invoice_id`/`invoice_url`).
+
+#### Tests
+- [ ] `backend/tests/payment-webhook.test.ts`: happy path (orden pasa a paid, factura nativa guardada), idempotencia (segundo webhook no duplica `Sale` ni stock), gateway inválido, orden inexistente, facturación FactElec mockeada y fallo de facturación sin romper el `200`.
+
+### Checks de validación manual
+
+- [ ] Disparar el webhook manualmente (curl) con un `transaction_id` de prueba y verificar orden pagada + `200 "OK"`.
+- [ ] Repetir el mismo curl y confirmar que no se duplica stock ni `Sale` (idempotencia).
+- [ ] Con FactElec habilitado y sandbox, verificar `billingInvoiceId`/`billingInvoiceUrl` persistidos tras el webhook.
+
+---
+
+## Slice 10: Frontend de checkout y estado de pago
+
+> Fuente: flujo bifurcado de `PAGOS-BO.md`; QR de `libelula_documentation.md` §1.
+
+### Objetivo
+
+Ofrecer en el checkout público las dos vías —pago en línea con QR Libélula o coordinación por WhatsApp— y mostrar el estado del pago y la factura al cliente.
+
+### Checks de implementación
+
+- [ ] `frontend/src/services/checkout.api.ts` + hook `useCheckout`: `initiatePayment(orderId, customerEmail)` → datos de QR/link.
+- [ ] Componente de resultado de checkout: imagen QR desde `qr_simple_url`, link a `url_pasarela_pagos`, botón de copiar link y aviso si la deuda expira.
+- [ ] `CartSummary`: bifurcar el CTA en "Pagar en línea ahora" (crea orden + checkout) y "Coordinar pedido por WhatsApp" (flujo actual intacto, sin regresiones).
+- [ ] Consulta de estado de la orden para el cliente (tracking mínimo: pendiente de pago → pagado → factura disponible con enlace `billingInvoiceUrl`).
+- [ ] Estados de error/timeout: pasarela no configurada, orden no pagable, fallo del gateway.
+- [ ] `npm run build` y ESLint del frontend sin errores.
+
+### Checks de validación manual
+
+- [ ] Completar un pago sandbox y ver la orden marcada como pagada sin intervención manual.
+- [ ] Verificar que el flujo por WhatsApp sigue funcionando igual que antes del slice.
+
+---
+
+## Slice 11: Conciliación y consulta de pagos (posterior)
+
+> Fuente: `libelula_documentation.md` §3 (consultar_pagos) y §4 (consultar deudas por identificador).
+
+### Objetivo
+
+Auditar transacciones pagadas en Libélula por rango de fechas y permitir sincronizar manualmente el estado de una orden puntual.
+
+### Checks de implementación
+
+- [ ] Método de estrategia Libélula para `POST /rest/deuda/consultar_pagos` por rango (máx. 90 días) con `appkey` del tenant; resultado tenant-scoped con paginación.
+- [ ] Método para `POST /rest/deuda/consultar_deudas/por_identificador` y botón "Sincronizar pago" en el detalle de orden (ADMIN), actualización idempotente.
+- [ ] UI de conciliación en dashboard: listado por rango con montos y formas de pago, export CSV reutilizando `import-export.service`.
+- [ ] Tests de aislamiento y manejo de errores de la pasarela.
+
+### Checks de validación manual
+
+- [ ] Conciliar un periodo con transacciones sandbox y comparar montos con las `Sale` del tenant.
+- [ ] Sincronizar una orden pagada fuera de banda y verificar que el estado queda consistente sin duplicados.
+
+---
+
 ## Progreso
 
 Actualizar esta sección después de cada sesión de trabajo. `[x]` requiere evidencia en código, prueba automatizada o validación manual informada por el usuario; `[ ]` significa pendiente. El agente debe leer el estado actual antes de cambiar marcas y preguntar por los checks manuales que no estén demostrados.
@@ -515,7 +709,13 @@ Actualizar esta sección después de cada sesión de trabajo. `[x]` requiere evi
 - [ ] Slice 5 completo (implementación completa: schema, backend, frontend y 21 pruebas nuevas; validación manual pendiente)
 - [ ] Slice 1.3 completo (gestor ampliado implementado; validación manual actualizada y pruebas frontend E2E pendientes)
 - [ ] Slice 1.4 completo (métricas básicas implementadas; pruebas manuales en Docker pendientes)
-- [ ] Próximo slice activo: validar Slice 5 en Docker (dashboard, descuentos, notificaciones, clientes, import/export) y los slices anteriores pendientes de validación manual; SEO y analítica avanzada quedan para el tramo final
-- [x] Última actualización: Slice 5 implementado — migración `add_audit_notification_discount`, auditoría con middleware, notificaciones de stock bajo, descuentos integrados en carrito/pedidos, clientes, import/export CSV, dashboard y navegación; 81 pruebas backend, builds y lint OK
+- [x] Slice 6 completo (esquema de pagos/facturación por tenant, crypto y config API; validación manual pendiente)
+- [ ] Slice 7 completo (arquitectura Strategy de pagos y facturación)
+- [ ] Slice 8 completo (checkout con Libélula)
+- [ ] Slice 9 completo (webhook de pagos y orquestación de facturación FactElec)
+- [ ] Slice 10 completo (frontend de checkout y estado de pago)
+- [ ] Slice 11 completo (conciliación y consulta de pagos — posterior)
+- [ ] Próximo slice activo: validar Slice 5 en Docker (dashboard, descuentos, notificaciones, clientes, import/export) y los slices anteriores pendientes de validación manual; Slice 6 quedó implementado, falta su validación manual (credenciales cifradas en BD, API sin appkey completo, 403 cross-tenant). Resolver después el drift histórico de `prisma migrate dev` y arrancar el Slice 7 (estrategias de pago/facturación). SEO y analítica avanzada quedan para el tramo final
+- [x] Última actualización: Slice 6 implementado — migración `add_payment_billing_config` (enums, `TenantPaymentConfig`, `TenantBillingConfig`, campos de conciliación en `Order`), crypto AES-256-GCM, API de configuración tenant-scoped con permiso `settings`, 19 pruebas nuevas (105 totales), builds y lint OK. La migración se aplicó con `migrate deploy` porque `migrate dev` detecta drift histórico y pide reset
 
 Cuando el usuario solicite **"Actualizar progreso"**, comparar este checklist con el código actual y con la evidencia proporcionada. Cuando solicite **"Continuar con el Slice #"**, trabajar únicamente en ese slice, mantener los contratos anteriores y actualizar esta sección al terminar.

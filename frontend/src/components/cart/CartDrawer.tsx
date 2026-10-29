@@ -1,6 +1,7 @@
+import { useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartStore } from "../../store/cart.store";
-import { useBranches } from "../../hooks/useBranches";
+import { useCatalogBranches } from "../../hooks/useCatalog";
 import { CartItem } from "./CartItem";
 import { CartSummary } from "./CartSummary";
 import { X } from "lucide-react";
@@ -12,7 +13,24 @@ interface Props {
 
 export const CartDrawer = ({ open, onClose }: Props) => {
   const { items, branchId, setBranch, isLoading } = useCartStore();
-  const { data: branches } = useBranches();
+  const { data: branches } = useCatalogBranches();
+  const autoBranchTriedRef = useRef(false);
+
+  // La sucursal se auto-selecciona una sola vez (primera activa del tenant):
+  // la tienda pública no debe exigirle al visitante que elija una para empezar.
+  // El ref evita repetir el PATCH en cada render mientras la query del carrito
+  // refresca (un PATCH por render cancelaría el refetch en vuelo).
+  useEffect(() => {
+    if (branchId) {
+      autoBranchTriedRef.current = true;
+      return;
+    }
+    if (autoBranchTriedRef.current) return;
+    if (!branches || branches.length === 0) return;
+
+    autoBranchTriedRef.current = true;
+    setBranch(branches[0].id);
+  }, [branchId, branches, setBranch]);
 
   return (
     <AnimatePresence>
@@ -52,7 +70,7 @@ export const CartDrawer = ({ open, onClose }: Props) => {
             </div>
 
             {/* Branch Selector */}
-            {branches && branches.length > 0 && (
+            {branches && branches.length > 1 && (
               <div className="p-4 border-b">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Sucursal
@@ -66,7 +84,6 @@ export const CartDrawer = ({ open, onClose }: Props) => {
                   }}
                   className="w-full border rounded-lg px-3 py-2 text-sm"
                 >
-                  <option value="">Seleccionar sucursal...</option>
                   {branches.map((branch) => (
                     <option key={branch.id} value={branch.id}>
                       {branch.name}
@@ -74,11 +91,12 @@ export const CartDrawer = ({ open, onClose }: Props) => {
                     </option>
                   ))}
                 </select>
-                {!branchId && items.length > 0 && (
-                  <p className="text-xs text-amber-600 mt-1">
-                    Seleccioná una sucursal para ver disponibilidad
-                  </p>
-                )}
+              </div>
+            )}
+
+            {branches && branches.length === 1 && (
+              <div className="px-4 py-2 border-b text-xs text-gray-500">
+                Sucursal: <span className="font-medium text-gray-700">{branches[0].name}</span>
               </div>
             )}
 

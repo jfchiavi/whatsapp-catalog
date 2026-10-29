@@ -1,5 +1,8 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useCart, useAddToCart, useUpdateCartItem, useRemoveCartItem, useSetCartBranch, useSubmitCart } from "../hooks/useCart";
 import { useAuthStore } from "./auth.store";
+import { useTenant } from "@/hooks/useTenant";
+import { createCart } from "@/services/cart.api";
 import type { CartItemData } from "../services/cart.api";
 
 const getOrCreateSessionId = (tenantId: string): string => {
@@ -27,7 +30,10 @@ export interface CartItem {
 
 export const useCartStore = () => {
   const user = useAuthStore((s) => s.user);
-  const tenantId = user?.tenantId || null;
+  // La tienda pública no requiere login: el tenant viene del contexto del
+  // catálogo (TenantProvider). En el dashboard (sin provider) se usa el del JWT.
+  const { tenant: publicTenant } = useTenant();
+  const tenantId = publicTenant?.id || user?.tenantId || null;
   const sessionId = tenantId ? getOrCreateSessionId(tenantId) : null;
 
   const { data: serverCart, isLoading } = useCart(tenantId, sessionId);
@@ -36,6 +42,7 @@ export const useCartStore = () => {
   const removeCartItemMutation = useRemoveCartItem();
   const setCartBranchMutation = useSetCartBranch();
   const submitCartMutation = useSubmitCart();
+  const queryClient = useQueryClient();
 
   const cartId = serverCart?.id || null;
   const branchId = serverCart?.branchId || null;
@@ -57,9 +64,25 @@ export const useCartStore = () => {
   const totalItems = () => items.reduce((a, i) => a + i.quantity, 0);
   const subtotal = () => items.reduce((a, i) => a + i.unitPriceSnapshot * i.quantity, 0);
 
+  // Si el carrito aún no existe (primera carga o query fallida), se crea bajo
+  // demanda en vez de ignorar silenciosamente el click del visitante.
+  const ensureCart = async (): Promise<{ id: string } | null> => {
+    if (cartId) return { id: cartId };
+    if (!tenantId || !sessionId) return null;
+
+    const cart = await createCart(tenantId, sessionId);
+    localStorage.setItem(`cart-id-${tenantId}`, cart.id);
+    queryClient.invalidateQueries({ queryKey: ['cart', tenantId, sessionId] });
+    return cart;
+  };
+
   const add = (variantId: string, quantity: number) => {
-    if (!cartId || !tenantId) return;
-    addToCartMutation.mutate({ cartId, tenantId, variantId, quantity });
+    if (!tenantId) return;
+    void (async () => {
+      const cart = await ensureCart();
+      if (!cart) return;
+      addToCartMutation.mutate({ cartId: cart.id, tenantId, variantId, quantity });
+    })();
   };
 
   const update = (itemId: string, quantity: number) => {
