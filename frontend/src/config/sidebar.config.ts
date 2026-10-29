@@ -14,6 +14,7 @@ import {
   Percent,
   UserRound,
   FileSpreadsheet,
+  CreditCard,
 } from 'lucide-react';
 import type { Permission } from '@/types/permissions';
 import type { UserRole } from '@/types/auth';
@@ -80,6 +81,12 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     label: 'Reportes',
     path: '/reports',
     icon: BarChart,
+    permission: 'reports',
+  },
+  {
+    label: 'Conciliación',
+    path: '/payments',
+    icon: CreditCard,
     permission: 'reports',
   },
   {

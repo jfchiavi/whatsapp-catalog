@@ -56,3 +56,22 @@ export type EmitInvoiceResult = {
   invoiceId: string;
   invoiceUrl: string | null;
 };
+
+export type PaymentQueryRange = {
+  from: Date;
+  to: Date;
+};
+
+export type ReconciliationRecord = {
+  transactionId: string;
+  identifier: string | null;
+  paidAt: string | null;
+  amountPaid: number;
+  paymentMethod: string;
+};
+
+export type OrderPaymentStatus = {
+  paid: boolean;
+  paidAt: string | null;
+  total: number | null;
+};

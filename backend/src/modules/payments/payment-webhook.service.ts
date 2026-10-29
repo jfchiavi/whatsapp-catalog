@@ -38,7 +38,7 @@ const reject = (status: number, code: string, message: string): WebhookOutcome =
 const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
-type WebhookOrder = {
+export type WebhookOrder = {
   id: string;
   tenantId: string;
   status: string;
@@ -94,6 +94,77 @@ const logWebhookFailure = async (
 
 const noopBillingTask = Promise.resolve();
 
+// Reclama el pago de forma idempotente y, si corresponde, confirma la orden
+// (stock + Sale) y lanza la facturación asíncrona. Lo usan el webhook y la
+// sincronización manual del Slice 11.
+export const processPaidOrder = async (
+  order: WebhookOrder,
+  invoiceId: string | null,
+  invoiceUrl: string | null
+): Promise<{ claimed: boolean; billingTask: Promise<void> }> => {
+  const claim = await prisma.$transaction(async (tx) => {
+    const updated = await tx.order.updateMany({
+      where: { id: order.id, gatewayStatus: { not: 'paid' } },
+      data: {
+        gatewayStatus: 'paid',
+        ...(invoiceId ? { billingInvoiceId: invoiceId } : {}),
+        ...(invoiceUrl ? { billingInvoiceUrl: invoiceUrl } : {}),
+      },
+    });
+
+    if (updated.count === 0) {
+      return { claimed: false, nextStatus: order.status };
+    }
+
+    let nextStatus = order.status;
+    if (order.status === 'pending' || order.status === 'contacted') {
+      await tx.order.update({ where: { id: order.id }, data: { status: 'confirmed' } });
+      nextStatus = 'confirmed';
+    }
+
+    return { claimed: true, nextStatus };
+  });
+
+  if (!claim.claimed) {
+    return { claimed: false, billingTask: noopBillingTask };
+  }
+
+  if (claim.nextStatus === 'confirmed') {
+    try {
+      await confirmOrder(order.tenantId, order.id, order.representativeId);
+    } catch (error) {
+      await logWebhookFailure('CONFIRM_FAILED', order.tenantId, order.id, error);
+    }
+  } else if (claim.nextStatus === 'cancelled') {
+    await logWebhookFailure(
+      'CONFIRM_FAILED',
+      order.tenantId,
+      order.id,
+      new AppError('Order is paid but was cancelled; confirmation skipped', 400, 'ORDER_CANCELLED')
+    );
+  }
+
+  const billingTask = (async () => {
+    try {
+      registerBuiltinStrategies();
+      const invoice = await BillingContext.emitInvoice(order.tenantId, toOrderContext(order));
+      if (invoice) {
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            billingInvoiceId: invoice.invoiceId,
+            billingInvoiceUrl: invoice.invoiceUrl,
+          },
+        });
+      }
+    } catch (error) {
+      await logWebhookFailure('BILLING_FAILED', order.tenantId, order.id, error);
+    }
+  })();
+
+  return { claimed: true, billingTask };
+};
+
 export const handlePaymentWebhook = async (
   gatewayParam: string,
   query: WebhookQuery
@@ -139,30 +210,9 @@ export const handlePaymentWebhook = async (
   const invoiceId = query.invoice_id ?? null;
   const invoiceUrl = query.invoice_url ?? null;
 
-  const claim = await prisma.$transaction(async (tx) => {
-    const updated = await tx.order.updateMany({
-      where: { id: order.id, gatewayStatus: { not: 'paid' } },
-      data: {
-        gatewayStatus: 'paid',
-        ...(invoiceId ? { billingInvoiceId: invoiceId } : {}),
-        ...(invoiceUrl ? { billingInvoiceUrl: invoiceUrl } : {}),
-      },
-    });
+  const result = await processPaidOrder(order, invoiceId, invoiceUrl);
 
-    if (updated.count === 0) {
-      return { claimed: false, nextStatus: order.status };
-    }
-
-    let nextStatus = order.status;
-    if (order.status === 'pending' || order.status === 'contacted') {
-      await tx.order.update({ where: { id: order.id }, data: { status: 'confirmed' } });
-      nextStatus = 'confirmed';
-    }
-
-    return { claimed: true, nextStatus };
-  });
-
-  if (!claim.claimed) {
+  if (!result.claimed) {
     return {
       accepted: true,
       orderId: order.id,
@@ -172,44 +222,11 @@ export const handlePaymentWebhook = async (
     };
   }
 
-  if (claim.nextStatus === 'confirmed') {
-    try {
-      await confirmOrder(order.tenantId, order.id, order.representativeId);
-    } catch (error) {
-      await logWebhookFailure('CONFIRM_FAILED', order.tenantId, order.id, error);
-    }
-  } else if (claim.nextStatus === 'cancelled') {
-    await logWebhookFailure(
-      'CONFIRM_FAILED',
-      order.tenantId,
-      order.id,
-      new AppError('Order is paid but was cancelled; confirmation skipped', 400, 'ORDER_CANCELLED')
-    );
-  }
-
-  const billingTask = (async () => {
-    try {
-      registerBuiltinStrategies();
-      const invoice = await BillingContext.emitInvoice(order.tenantId, toOrderContext(order));
-      if (invoice) {
-        await prisma.order.update({
-          where: { id: order.id },
-          data: {
-            billingInvoiceId: invoice.invoiceId,
-            billingInvoiceUrl: invoice.invoiceUrl,
-          },
-        });
-      }
-    } catch (error) {
-      await logWebhookFailure('BILLING_FAILED', order.tenantId, order.id, error);
-    }
-  })();
-
   return {
     accepted: true,
     orderId: order.id,
     tenantId: order.tenantId,
     alreadyPaid: false,
-    billingTask,
+    billingTask: result.billingTask,
   };
 };

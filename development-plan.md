@@ -737,17 +737,36 @@ Ofrecer en el checkout público las dos vías —pago en línea con QR Libélula
 
 Auditar transacciones pagadas en Libélula por rango de fechas y permitir sincronizar manualmente el estado de una orden puntual.
 
+### Decisiones de contrato
+
+- `IPaymentStrategy` gana dos métodos **opcionales** (`queryPayments`/`queryOrderPayment`) para no romper gateways existentes; sin ellos el servicio responde `RECONCILIATION_NOT_SUPPORTED`.
+- Rango máximo de 90 días y `from < to` validados en `payment-reconciliation.service` (`RANGE_TOO_LONG`/`INVALID_RANGE`), compartidos por listado y export; las fechas se formatean en UTC `yyyy-MM-dd HH:mm:ss` para Libélula.
+- Permisos: lectura de conciliación con `reports`; sincronización con `settings` (ADMIN), interpretando el "(ADMIN)" del plan; ambas rutas derivan el tenant del JWT.
+- La sincronización con `gatewayTransactionId` reutiliza `processPaidOrder` (claim idempotente + confirmación + billing, extraído del webhook); sin transacción registrada solo marca `gatewayStatus = 'paid'` sin confirmar (caso borde documentado para revisión manual).
+- El interceptor de axios conserva `meta` del envelope para paginar sin romper el unwrap `data`.
+
 ### Checks de implementación
 
-- [ ] Método de estrategia Libélula para `POST /rest/deuda/consultar_pagos` por rango (máx. 90 días) con `appkey` del tenant; resultado tenant-scoped con paginación.
-- [ ] Método para `POST /rest/deuda/consultar_deudas/por_identificador` y botón "Sincronizar pago" en el detalle de orden (ADMIN), actualización idempotente.
-- [ ] UI de conciliación en dashboard: listado por rango con montos y formas de pago, export CSV reutilizando `import-export.service`.
-- [ ] Tests de aislamiento y manejo de errores de la pasarela.
+- [x] Método de estrategia Libélula para `POST /rest/deuda/consultar_pagos` por rango (máx. 90 días) con `appkey` del tenant; resultado tenant-scoped con paginación (`page`/`pageSize`, `meta` en la respuesta) — `libelula-payment.strategy.ts` + `payment-reconciliation.service.ts`.
+- [x] Método para `POST /rest/deuda/consultar_deudas/por_identificador` y botón "Sincronizar pago" en el detalle de orden (visible con permiso `settings`, es decir ADMIN), vía `POST /api/orders/:id/sync-payment` con actualización idempotente (claim + `confirmOrder` + billing sin duplicar `Sale`/stock).
+- [x] UI de conciliación en dashboard (`features/payments/ReconciliationPage.tsx`, ruta `/payments`, entrada "Conciliación" en sidebar con permiso `reports`): listado por rango con montos y formas de pago, paginación y export CSV reutilizando `toCSV`/`downloadCsv` de import-export.
+- [x] Tests de aislamiento y manejo de errores de la pasarela.
+
+#### Tests
+- [x] `backend/tests/payment-reconciliation.test.ts` (14 pruebas): paginación con appkey descifrada, rangos inválidos, aislamiento entre tenants (`PAYMENT_NOT_CONFIGURED` sin config), gateway sin soporte, CSV sin credenciales, error de pasarela 502, sincronización idempotente (1 `Sale`, stock descontado una sola vez), caso borde sin transacción, deuda no pagada sin cambios, cross-tenant `404`, rutas con envelope/permisos (`403` SELLER, `400` por rango, sync `403`/`404`).
+
+### Verificación ejecutada
+
+- `npx vitest run`: 16 archivos, 143 pruebas pasan; `tsc --noEmit` y ESLint backend sin errores; `npm run build` registra `/api/payments/reconciliation`, `/export` y `/api/orders/[id]/sync-payment`.
+- Frontend: `npm run build` (Vite) y ESLint focalizado sin errores (incluye tipado del interceptor y helper `downloadCsv` reutilizado).
+- Docker (imágenes reconstruidas): conciliación y sync sin auth → `401`.
 
 ### Checks de validación manual
 
 - [ ] Conciliar un periodo con transacciones sandbox y comparar montos con las `Sale` del tenant.
 - [ ] Sincronizar una orden pagada fuera de banda y verificar que el estado queda consistente sin duplicados.
+
+> Ambos escenarios están cubiertos por `tests/payment-reconciliation.test.ts` (sincronización idempotente con `Sale`/stock verificados); la comparación con montos reales requiere un periodo sandbox con `appkey` y `apiToken` de prueba.
 
 ---
 
@@ -771,8 +790,8 @@ Actualizar esta sección después de cada sesión de trabajo. `[x]` requiere evi
 - [x] Slice 8 completo (checkout con Libélula: estrategia, `POST /api/checkout`, idempotencia y 8 tests con fetch mockeado; validación sandbox manual pendiente)
 - [x] Slice 9 completo (webhook idempotente + `FactElecBillingStrategy` + `codigoProductoSin`/`customerNit`/`Sale.userId` nullable y 6 tests; validación con sandbox pendiente)
 - [x] Slice 10 completo (frontend de checkout y estado de pago: bifurcación del CTA, resultado con QR/link/copia, tracking público y mapeo de errores; validación manual sandbox pendiente)
-- [ ] Slice 11 completo (conciliación y consulta de pagos — posterior)
-- [ ] Próximo slice activo: Slice 11 (conciliación: `consultar_pagos` por rango, botón "Sincronizar pago" en detalle de orden, UI de conciliación con export CSV); pendientes de usuario: confirmar validación manual del Slice 6, sandbox de Libélula (Slices 8–10) y webhook/FactElec (Slice 9), verificar en navegador que el flujo WhatsApp no regresó, y resolver el drift histórico de `prisma migrate dev`. Validación manual de Slices 0–5 en Docker pendiente. SEO y analítica avanzada quedan para el tramo final
-- [x] Última actualización: Slice 10 implementado — `checkout.api.ts`/`useCheckout` (polling 5s mientras `initiated`), `CheckoutResult` con QR, link, copia y badge de estado, `CartSummary` bifurcado (pago en línea vs. WhatsApp con fallback si el pago falla tras crear la orden), endpoint público `GET /api/checkout/:orderId` + 2 tests (129 totales), builds/lint OK y smoke en Docker
+- [x] Slice 11 completo (conciliación y consulta de pagos: estrategia Libélula, UI `/payments`, sync idempotente y 14 tests; validación con sandbox pendiente)
+- [ ] Próximo slice activo: todos los slices de pagos (6–11) están implementados. Pendientes: validación manual de sandbox Libélula/FactElec (Slices 8–11), confirmación de los checks manuales de Slices 0–6 y del flujo WhatsApp (Slice 10), resolver el drift histórico de `prisma migrate dev`, y luego avanzar con el tramo final (SEO configurable por tenant y analítica avanzada). Validación manual de Slices 0–5 en Docker pendiente
+- [x] Última actualización: Slice 11 implementado — `queryPayments`/`queryOrderPayment` opcionales en `IPaymentStrategy` (Libélula: `consultar_pagos` y `por_identificador`), servicio de conciliación con rangos ≤90 días y export CSV vía `toCSV`, `POST /api/orders/:id/sync-payment` reutilizando `processPaidOrder` (extraído del webhook), UI `/payments` con paginación y sidebar, botón "Sincronizar pago" en detalle de orden (ADMIN), 16 tests/143 totales, builds/lint OK y smoke en Docker
 
 Cuando el usuario solicite **"Actualizar progreso"**, comparar este checklist con el código actual y con la evidencia proporcionada. Cuando solicite **"Continuar con el Slice #"**, trabajar únicamente en ese slice, mantener los contratos anteriores y actualizar esta sección al terminar.

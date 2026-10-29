@@ -16,9 +16,15 @@ export const api = axios.create({
     - o en storage separado
 */
 let isRefreshing = false;
-let failedQueue: any[] = [];
 
-const processQueue = (error: any, token: string | null = null) => {
+type QueuedRequest = {
+  resolve: (token: string | null) => void;
+  reject: (error?: unknown) => void;
+};
+
+let failedQueue: QueuedRequest[] = [];
+
+const processQueue = (error?: unknown, token: string | null = null) => {
   failedQueue.forEach((prom) => {
     if (error) {
       prom.reject(error);
@@ -45,6 +51,10 @@ api.interceptors.response.use(
   (response) => {
     const body = response.data;
     if (body && typeof body === 'object' && body.success === true && 'data' in body) {
+      // Conserva `meta` (paginación) del envelope sin romper el unwrap.
+      if (body.meta !== undefined) {
+        (response as unknown as { meta?: unknown }).meta = body.meta;
+      }
       response.data = body.data;
     }
     return response;

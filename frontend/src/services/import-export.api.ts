@@ -16,7 +16,7 @@ export const importStockCsv = async (csv: string): Promise<ImportSummary> => {
   return data;
 };
 
-const downloadCsv = (content: string, filename: string) => {
+export const downloadCsv = (content: string, filename: string) => {
   const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');

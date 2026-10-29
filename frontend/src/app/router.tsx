@@ -28,6 +28,7 @@ import CustomersPage from '@/features/customers/CustomersPage';
 import CustomerDetailPage from '@/features/customers/CustomerDetailPage';
 import NotificationsPage from '@/features/notifications/NotificationsPage';
 import ImportPage from '@/features/import/ImportPage';
+import ReconciliationPage from '@/features/payments/ReconciliationPage';
 import ErrorPage from '@/components/dashboard/layout/ErrorPage';
 
 export const router = createBrowserRouter([
@@ -74,6 +75,7 @@ export const router = createBrowserRouter([
           { path: '/sales/new', lazy: async () => {return {Component: CreateSalePage }} },
           //TODO: /sales/:id       → SaleDetailPage (opcional)
           { path: '/reports', lazy: async () => {return {Component: ReportsPage }}},
+          { path: '/payments', lazy: async () => {return {Component: ReconciliationPage }}},
           { path: '/whatsapp-orders', lazy: async () => {return {Component: WhatsAppOrdersPage }}},
           { path: '/orders', lazy: async () => {return {Component: OrdersPage }}},
           { path: '/orders/:id', lazy: async () => {return {Component: OrderDetailPage }}},

@@ -68,10 +68,16 @@ export interface OrderData {
   customerName: string;
   customerPhone: string;
   customerNotes?: string;
+  customerEmail?: string | null;
+  customerNit?: string | null;
   status: string;
   totalSnapshot: number;
   whatsappMessage: string;
   whatsappUrl: string;
+  gatewayTransactionId?: string | null;
+  gatewayStatus?: string | null;
+  billingInvoiceId?: string | null;
+  billingInvoiceUrl?: string | null;
   createdAt: string;
   items: OrderItemData[];
   branch: { id: string; name: string };

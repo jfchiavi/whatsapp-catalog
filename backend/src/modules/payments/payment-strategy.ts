@@ -5,9 +5,12 @@ import type {
   CreatePaymentResult,
   OrderContext,
   PaymentGatewayCredentials,
+  PaymentQueryRange,
+  ReconciliationRecord,
   WebhookParams,
   WebhookProcessResult,
   EmitInvoiceResult,
+  OrderPaymentStatus,
 } from './payment-types';
 
 export interface IPaymentStrategy {
@@ -20,6 +23,17 @@ export interface IPaymentStrategy {
     params: WebhookParams,
     config: PaymentGatewayCredentials
   ): Promise<WebhookProcessResult>;
+
+  // Conciliación (Slice 11): opcional para no forzar a todos los gateways.
+  queryPayments?(
+    config: PaymentGatewayCredentials,
+    range: PaymentQueryRange
+  ): Promise<ReconciliationRecord[]>;
+
+  queryOrderPayment?(
+    config: PaymentGatewayCredentials,
+    identifier: string
+  ): Promise<OrderPaymentStatus>;
 }
 
 export interface IBillingStrategy {
@@ -39,6 +53,9 @@ export const registerPaymentStrategy = (
   paymentStrategies.set(gateway, strategy);
 };
 
+export const hasPaymentStrategy = (gateway: PaymentGatewayType): boolean =>
+  paymentStrategies.has(gateway);
+
 export const getPaymentStrategy = (gateway: PaymentGatewayType): IPaymentStrategy => {
   const strategy = paymentStrategies.get(gateway);
   if (!strategy) {
@@ -57,6 +74,9 @@ export const registerBillingStrategy = (
 ): void => {
   billingStrategies.set(provider, strategy);
 };
+
+export const hasBillingStrategy = (provider: BillingProviderType): boolean =>
+  billingStrategies.has(provider);
 
 export const getBillingStrategy = (provider: BillingProviderType): IBillingStrategy => {
   const strategy = billingStrategies.get(provider);

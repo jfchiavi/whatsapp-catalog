@@ -1,6 +1,8 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/auth.store";
 import { useOrder, useUpdateOrderStatus, useConfirmOrder } from "../../hooks/useCart";
+import { useSyncPayment } from "@/hooks/usePayments";
+import { RoleBasedRender } from "@/components/dashboard/auth/RoleBasedRender";
 import { ArrowLeft } from "lucide-react";
 
 export default function OrderDetailPage() {
@@ -12,6 +14,25 @@ export default function OrderDetailPage() {
   const { data: order, isLoading } = useOrder(tenantId, id || "");
   const updateStatus = useUpdateOrderStatus();
   const confirmOrderMutation = useConfirmOrder();
+  const syncPayment = useSyncPayment();
+
+  const gatewayBadge = (gatewayStatus: string) => {
+    const styles: Record<string, string> = {
+      initiated: "bg-yellow-100 text-yellow-800",
+      paid: "bg-green-100 text-green-700",
+      failed: "bg-red-100 text-red-700",
+    };
+    const labels: Record<string, string> = {
+      initiated: "Pago iniciado",
+      paid: "Pagado",
+      failed: "Pago fallido",
+    };
+    return (
+      <span className={`px-2 py-1 rounded text-xs font-medium ${styles[gatewayStatus] || "bg-gray-100 text-gray-600"}`}>
+        {labels[gatewayStatus] || gatewayStatus}
+      </span>
+    );
+  };
 
   const statusBadge = (status: string) => {
     const styles: Record<string, string> = {
@@ -128,6 +149,67 @@ export default function OrderDetailPage() {
           </tfoot>
         </table>
       </div>
+
+      {/* Payment (solo órdenes con flujo de pago en línea) */}
+      {(order.gatewayStatus || order.gatewayTransactionId) && (
+        <div className="bg-white border rounded-lg p-4 space-y-3">
+          <h2 className="font-semibold">Pago</h2>
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            {order.gatewayStatus && gatewayBadge(order.gatewayStatus)}
+            {order.gatewayTransactionId && (
+              <span className="font-mono text-xs text-gray-500">
+                Transacción: {order.gatewayTransactionId}
+              </span>
+            )}
+          </div>
+
+          {syncPayment.data?.orderId === order.id && (
+            <p
+              className={`text-sm ${
+                syncPayment.data.paid && syncPayment.data.changed
+                  ? "text-green-700"
+                  : syncPayment.data.paid
+                    ? "text-gray-600"
+                    : "text-yellow-700"
+              }`}
+            >
+              {syncPayment.data.paid && syncPayment.data.changed
+                ? "Pago sincronizado: la orden quedó confirmada."
+                : syncPayment.data.paid
+                  ? "La orden ya estaba pagada; no hubo cambios."
+                  : "La pasarela todavía no reporta el pago de esta orden."}
+            </p>
+          )}
+
+          {syncPayment.isError && syncPayment.variables === order.id && (
+            <p className="text-sm text-red-600">No se pudo sincronizar el pago.</p>
+          )}
+
+          <div className="flex flex-wrap gap-2">
+            <RoleBasedRender permission="settings">
+              {order.gatewayTransactionId && order.gatewayStatus !== "paid" && (
+                <button
+                  onClick={() => syncPayment.mutate(order.id)}
+                  disabled={syncPayment.isPending}
+                  className="px-4 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 disabled:opacity-50"
+                >
+                  {syncPayment.isPending ? "Sincronizando..." : "Sincronizar pago"}
+                </button>
+              )}
+            </RoleBasedRender>
+            {order.billingInvoiceUrl && (
+              <a
+                href={order.billingInvoiceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 border rounded hover:bg-gray-50"
+              >
+                Ver factura
+              </a>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="bg-white border rounded-lg p-4">
