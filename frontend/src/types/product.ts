@@ -5,6 +5,7 @@ export interface Variant {
   sku: string;
   price: number;
   cost: number;
+  codigoProductoSin: string | null;
   attributes: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
@@ -39,6 +40,7 @@ export type CreateVariantInput = {
   sku: string;
   price: number;
   cost: number;
+  codigoProductoSin?: string | null;
   attributes?: Record<string, unknown>;
 };
 

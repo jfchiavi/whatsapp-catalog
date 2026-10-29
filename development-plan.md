@@ -601,6 +601,7 @@ Inicializar un pago Libélula para una orden existente, registrar la transacció
 
 - Además de `customerEmail`, la idempotencia del reintento requiere redevolver el mismo QR/link: se agregan `Order.gatewayQrUrl` y `Order.gatewayPaymentUrl` (migración `20261028120000_add_checkout_order_fields`).
 - El `callback_url` del webhook se construye con `APP_BASE_URL` (agregada a `backend/.env`, `.env.docker` y `backend/.env.production`); en despliegues reales debe apuntar al host público del backend.
+- `POST /api/checkout` acepta además `customerNit` opcional (agregado en el Slice 9 para alimentar `numeroDocumento` de FactElec; solo se persiste en el registro, no en el reintento idempotente).
 - `LibelulaPaymentStrategy` se registra en el registry mediante `registerBuiltinStrategies()` (idempotente), manteniendo el patrón de registro del Slice 7.
 
 ### Checks de implementación
@@ -645,28 +646,46 @@ Inicializar un pago Libélula para una orden existente, registrar la transacció
 
 Confirmar pagos de forma desacoplada vía webhook global por gateway, con idempotencia, y disparar facturación electrónica según la configuración del tenant.
 
+### Decisiones de contrato
+
+- `Sale.userId` pasa a nullable (migración `20261028150000_add_billing_webhook_fields`, FK ahora `ON DELETE SET NULL`): el webhook confirma la orden sin usuario autenticado; la UI muestra `Sistema` como fallback.
+- `Order.customerNit` (opcional) alimenta `numeroDocumento` de FactElec; `POST /api/checkout` acepta `customerNit` opcional para persistirlo.
+- `Variant.codigoProductoSin` opcional; requerido solo cuando FactElec está habilitado para el tenant (si falta, la facturación falla con `BILLING_PRODUCT_CODE_REQUIRED` y el webhook igual responde `200`).
+- `AuditAction` se amplía con `CONFIRM_FAILED` y `BILLING_FAILED` (columna String, sin migración) como estado de reintento observable.
+- El `:gateway` del webhook se normaliza a mayúsculas: el `callback_url` enviado a Libélula es `.../payments/libelula` (minúscula) pero el enum es `LIBELULA`.
+- Interpretación de la regla `200/400`: `200 "OK"` para entregas procesadas y reintentos idempotentes; `400` para gateway desconocido, payload sin `transaction_id`, `transaction_id` sin orden correspondiente y tenant inactivo.
+
 ### Checks de implementación
 
 #### Backend — Webhook
-- [ ] `GET /api/webhooks/payments/:gateway` (público): valida `:gateway` contra `PaymentGatewayType`; para Libélula lee `transaction_id`, `invoice_id`, `invoice_url` del query string.
-- [ ] Transacción Prisma: buscar orden por `gatewayTransactionId`, verificar pertenencia a un tenant activo e idempotencia (no reprocesar órdenes ya pagadas); actualizar `gatewayStatus = 'paid'`, guardar la factura nativa de Libélula si viene en el query y ejecutar la confirmación existente de la orden (descuento de stock + `Sale`) sin duplicarla.
-- [ ] Orquestación de facturación asíncrona (post-commit, fuera de la respuesta HTTP): si el tenant tiene FactElec habilitado, invocar `BillingContext.emitInvoice` y persistir `billingInvoiceId`/`billingInvoiceUrl`; si falla, log descriptivo + estado de reintento sin bloquear el `200`.
-- [ ] Responder siempre `200` con cuerpo `"OK"` en entregas válidas; `400` solo para gateway desconocido o payload ilegible.
+- [x] `GET /api/webhooks/payments/:gateway` (público): valida `:gateway` contra `PaymentGatewayType` (case-insensitive) y para Libélula lee `transaction_id`, `invoice_id`, `invoice_url` del query string.
+- [x] Transacción Prisma: busca orden por `gatewayTransactionId`, verifica tenant activo e idempotencia (claim con `updateMany` where `gatewayStatus != paid`, sin reprocesar órdenes ya pagadas); actualiza `gatewayStatus = 'paid'`, guarda la factura nativa de Libélula si viene en el query y ejecuta la confirmación existente de la orden (`confirmOrder`: descuento de stock + `Sale`) sin duplicarla (promueve `pending|contacted → confirmed` antes de confirmar; `cancelled` queda logueado).
+- [x] Orquestación de facturación asíncrona (post-commit, fuera de la respuesta HTTP): si el tenant tiene FactElec habilitado, invoca `BillingContext.emitInvoice` y persiste `billingInvoiceId`/`billingInvoiceUrl`; si falla, log descriptivo + `AuditLog(BILLING_FAILED)` con `code`/`error` como estado de reintento sin bloquear el `200`.
+- [x] Responde `200` con cuerpo `"OK"` (text/plain) en entregas válidas; `400` para gateway desconocido o payload ilegible (ver interpretación arriba).
 
 #### Backend — FactElecBillingStrategy
-- [ ] `FactElecBillingStrategy implements IBillingStrategy`: `fetch` POST a `https://api.factelec-api.com/api/v1/facturas` con header `x-api-token` desde `TenantBillingConfig.credentialsEncrypted` (descifrado) y payload `cliente` (nombreRazonSocial, numeroDocumento, codigoTipoDocumento), `codigoMetodoPago` y `detalles[]` (codigoProductoSin, codigoProducto=SKU, descripcion, cantidad, precioUnitario, subTotal) desde `OrderItem`.
-- [ ] Capturar la respuesta `data.cuf` (y PDF/URL si está disponible en el contrato) → `billingInvoiceId`/`billingInvoiceUrl`.
-- [ ] Agregar `codigoProductoSin` opcional a `Variant` (migración + campo en formularios de variante); requerido solo cuando FactElec está habilitado para el tenant.
-- [ ] Registrar `LIBELULA` y `FACTELEC` en los contextos; `LIBELULA_NATIVE` resuelve el no-op (el webhook de Libélula ya trae `invoice_id`/`invoice_url`).
+- [x] `FactElecBillingStrategy implements IBillingStrategy`: `fetch` POST a `https://api.factelec-api.com/api/v1/facturas` con header `x-api-token` desde `TenantBillingConfig.credentialsEncrypted` (descifrado) y payload `cliente` (nombreRazonSocial, numeroDocumento, codigoTipoDocumento 1=CI/2=NIT), `codigoMetodoPago` y `detalles[]` (codigoProductoSin, codigoProducto=SKU snapshot, descripcion, cantidad, precioUnitario, subTotal) desde `OrderItem`.
+- [x] Captura la respuesta `data.cuf` → `billingInvoiceId` y `data.url/pdfUrl/pdf` → `billingInvoiceUrl`; `!ok` o CUF ausente → error de pasarela sin credenciales en logs.
+- [x] `codigoProductoSin` agregado a `Variant` (migración + validators/service + formularios Create/UpdateVariantModal y tipo `Variant`); requerido solo cuando FactElec está habilitado para el tenant.
+- [x] Registrados `LIBELULA` y `FACTELEC` en los contextos vía `registerBuiltinStrategies()`; `LIBELULA_NATIVE` resuelve el no-op (el webhook de Libélula ya trae `invoice_id`/`invoice_url`).
 
 #### Tests
-- [ ] `backend/tests/payment-webhook.test.ts`: happy path (orden pasa a paid, factura nativa guardada), idempotencia (segundo webhook no duplica `Sale` ni stock), gateway inválido, orden inexistente, facturación FactElec mockeada y fallo de facturación sin romper el `200`.
+- [x] `backend/tests/payment-webhook.test.ts`: happy path (orden `paid`, factura nativa del query persistida, stock descontado, `Sale` con `userId` null y `StockMovement`), idempotencia (segundo webhook no duplica `Sale` ni stock), gateway inválido, payload sin transacción, orden inexistente, facturación FactElec mockeada (payload exacto con token descifrado, persistencia de CUF/URL, gateway en minúsculas), fallo de facturación sin romper el `200` (auditoría `BILLING_FAILED`) y validación de `codigoProductoSin`/documento — 6 pruebas pasan.
+
+### Verificación ejecutada
+
+- `npx vitest run`: 15 archivos, 127 pruebas pasan.
+- `npx tsc --noEmit` backend sin errores; `npm run build` Next.js compila con `/api/webhooks/payments/[gateway]`; ESLint focalizado backend y frontend sin errores.
+- `npm run build` frontend (Vite) correcto; `prisma migrate status`: 10 migraciones y diff BD↔schema vacío.
+- Smoke test en Docker (imagen reconstruida): `PAYPAL` → `400 INVALID_GATEWAY`, sin `transaction_id` → `400`, transacción inexistente → `400 ORDER_NOT_FOUND`.
 
 ### Checks de validación manual
 
 - [ ] Disparar el webhook manualmente (curl) con un `transaction_id` de prueba y verificar orden pagada + `200 "OK"`.
 - [ ] Repetir el mismo curl y confirmar que no se duplica stock ni `Sale` (idempotencia).
 - [ ] Con FactElec habilitado y sandbox, verificar `billingInvoiceId`/`billingInvoiceUrl` persistidos tras el webhook.
+
+> Los tres escenarios están cubiertos por `tests/payment-webhook.test.ts` contra BD real; en Docker solo se verificó el manejo de errores (`400` gateway/payload/orden). El caso FactElec requiere un `apiToken` sandbox real de FactElec.
 
 ---
 
@@ -734,10 +753,10 @@ Actualizar esta sección después de cada sesión de trabajo. `[x]` requiere evi
 - [x] Slice 6 completo (esquema de pagos/facturación por tenant, crypto y config API; evidencia de validación manual ejecutada, pendiente de confirmación)
 - [x] Slice 7 completo (arquitectura Strategy de pagos y facturación: interfaces, contexts, registry y 8 tests con estrategias fake; validación manual pendiente)
 - [x] Slice 8 completo (checkout con Libélula: estrategia, `POST /api/checkout`, idempotencia y 8 tests con fetch mockeado; validación sandbox manual pendiente)
-- [ ] Slice 9 completo (webhook de pagos y orquestación de facturación FactElec)
+- [x] Slice 9 completo (webhook idempotente + `FactElecBillingStrategy` + `codigoProductoSin`/`customerNit`/`Sale.userId` nullable y 6 tests; validación con sandbox pendiente)
 - [ ] Slice 10 completo (frontend de checkout y estado de pago)
 - [ ] Slice 11 completo (conciliación y consulta de pagos — posterior)
-- [ ] Próximo slice activo: Slice 9 (webhook `GET /api/webhooks/payments/:gateway`, confirmación idempotente de orden y `FactElecBillingStrategy`); pendientes de usuario: confirmar la validación manual del Slice 6, probar sandbox de Libélula para el Slice 8 (requiere appkey real) y resolver el drift histórico de `prisma migrate dev`. Validación manual de Slices 0–5 en Docker pendiente. SEO y analítica avanzada quedan para el tramo final
-- [x] Última actualización: Slice 8 implementado — migración `add_checkout_order_fields` (`customerEmail`, `gatewayQrUrl`, `gatewayPaymentUrl`), `LibelulaPaymentStrategy` + `registerBuiltinStrategies`, `checkout.service.ts` con idempotencia, `POST /api/checkout` público con `resolveTenant`, env `APP_BASE_URL`, 8 tests nuevos (121 totales), builds/lint/migrate OK y smoke test en Docker
+- [ ] Próximo slice activo: Slice 10 (frontend de checkout: `checkout.api.ts`/`useCheckout`, bifurcación del CTA en CartSummary y tracking de estado de pago); pendientes de usuario: confirmar validación manual del Slice 6, sandbox de Libélula (Slice 8) y webhook/FactElec (Slice 9), y resolver el drift histórico de `prisma migrate dev`. Validación manual de Slices 0–5 en Docker pendiente. SEO y analítica avanzada quedan para el tramo final
+- [x] Última actualización: Slice 9 implementado — webhook `GET /api/webhooks/payments/:gateway` con claim idempotente, confirmación de orden reutilizando `confirmOrder` (venta sin usuario → `Sale.userId` nullable), facturación FactElec asíncrona con `AuditLog(BILLING_FAILED)` como reintento, `Variant.codigoProductoSin` y `Order.customerNit` (migración `add_billing_webhook_fields`, 10 migraciones), formularios de variante actualizados, 6 tests nuevos (127 totales), builds/lint OK y smoke en Docker
 
 Cuando el usuario solicite **"Actualizar progreso"**, comparar este checklist con el código actual y con la evidencia proporcionada. Cuando solicite **"Continuar con el Slice #"**, trabajar únicamente en ese slice, mantener los contratos anteriores y actualizar esta sección al terminar.

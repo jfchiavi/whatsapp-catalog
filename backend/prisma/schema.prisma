@@ -233,6 +233,7 @@ model Variant {
   sku        String
   price      Float
   cost       Float
+  codigoProductoSin String?
   attributes Json     @default("{}")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -284,14 +285,14 @@ model StockMovement {
 model Sale {
   id        String   @id @default(uuid())
   branchId  String
-  userId    String
+  userId    String?
   total     Float
   createdAt DateTime @default(now())
   tenantId  String
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
 
   branch Branch     @relation(fields: [branchId], references: [id])
-  user   User       @relation(fields: [userId], references: [id])
+  user   User?      @relation(fields: [userId], references: [id])
   items  SaleItem[]
 }
 
@@ -379,6 +380,7 @@ model Order {
   customerName     String
   customerPhone    String
   customerEmail    String?
+  customerNit      String?
   customerNotes    String?
   status           String   @default("pending") // pending | contacted | confirmed | completed | cancelled
   totalSnapshot    Float

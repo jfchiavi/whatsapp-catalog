@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Variant, UpdateVariantInput } from '@/types/product';
 
 export function UpdateVariantModal({
@@ -11,25 +11,15 @@ export function UpdateVariantModal({
   onSubmit: (data: UpdateVariantInput) => void;
 }) {
   const [form, setForm] = useState<UpdateVariantInput>({
-    sku: '',
-    price: 0,
-    cost: 0,
-    attributes: {},
+    sku: variant.sku,
+    price: variant.price,
+    cost: variant.cost,
+    codigoProductoSin: variant.codigoProductoSin ?? '',
+    attributes: variant.attributes ?? {},
   });
 
   const [attrKey, setAttrKey] = useState('');
   const [attrValue, setAttrValue] = useState('');
-
-  useEffect(() => {
-    if (variant) {
-      setForm({
-        sku: variant.sku,
-        price: variant.price,
-        cost: variant.cost,
-        attributes: variant.attributes ?? {},
-      });
-    }
-  }, [variant]);
 
   const addAttribute = () => {
     if (!attrKey.trim()) return;
@@ -42,7 +32,8 @@ export function UpdateVariantModal({
   };
 
   const removeAttribute = (key: string) => {
-    const { [key]: _, ...rest } = form.attributes ?? {};
+    const rest = { ...form.attributes };
+    delete rest[key];
     setForm({ ...form, attributes: rest });
   };
 
@@ -72,6 +63,13 @@ export function UpdateVariantModal({
           className="w-full border rounded p-2"
           value={form.cost ?? 0}
           onChange={(e) => setForm({ ...form, cost: Number(e.target.value) })}
+        />
+
+        <input
+          placeholder="Código producto SIN (FactElec, opcional)"
+          className="w-full border rounded p-2"
+          value={form.codigoProductoSin ?? ''}
+          onChange={(e) => setForm({ ...form, codigoProductoSin: e.target.value || null })}
         />
 
         <div className="space-y-2">

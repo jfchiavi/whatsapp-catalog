@@ -26,7 +26,8 @@ export async function POST(req: NextRequest) {
     const result = await initiateCheckout(
       tenant.tenantId,
       parsed.data.orderId,
-      parsed.data.customerEmail
+      parsed.data.customerEmail,
+      parsed.data.customerNit
     );
 
     return NextResponse.json({ success: true, data: result });

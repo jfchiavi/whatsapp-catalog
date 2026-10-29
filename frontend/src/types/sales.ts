@@ -14,7 +14,7 @@ export interface Sale {
     id: string;
     createdAt: string;
     branchId: string | null;
-    userId: string;
+    userId: string | null;
     user?: { id: string; name: string; email?: string };
     branch?: { id: string; name: string };
     items: SaleItem[];

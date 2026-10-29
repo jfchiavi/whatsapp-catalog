@@ -83,7 +83,7 @@ export const updateOrderStatus = async (
 export const confirmOrder = async (
   tenantId: string,
   orderId: string,
-  userId: string
+  userId: string | null
 ) => {
   const order = await prisma.order.findFirst({
     where: { id: orderId, tenantId },

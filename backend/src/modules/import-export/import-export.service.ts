@@ -346,7 +346,7 @@ export const exportSales = async (tenantId: string, from?: Date, to?: Date) => {
       sale.id,
       sale.createdAt.toISOString(),
       sale.branch.name,
-      sale.user.name,
+      sale.user?.name ?? 'Sistema',
       item.variant.product.name,
       item.variant.sku,
       item.quantity,

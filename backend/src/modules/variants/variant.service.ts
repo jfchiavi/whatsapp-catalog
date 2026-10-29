@@ -28,6 +28,7 @@ export const createVariant = async (data: {
   sku: string;
   price: number;
   cost: number;
+  codigoProductoSin?: string | null;
   attributes?: Prisma.InputJsonValue;
   tenantId: string;
 }) => {
@@ -53,6 +54,7 @@ export const createVariant = async (data: {
       sku: data.sku,
       price: data.price,
       cost: data.cost,
+      codigoProductoSin: data.codigoProductoSin ?? null,
       attributes: data.attributes ?? ({} as Prisma.InputJsonValue),
       tenantId: data.tenantId,
     },
@@ -66,6 +68,7 @@ export const updateVariant = async (
     sku: string;
     price: number;
     cost: number;
+    codigoProductoSin: string | null;
     attributes: Prisma.InputJsonValue;
   }>
 ) => {
@@ -93,6 +96,7 @@ export const updateVariant = async (
       sku: data.sku,
       price: data.price,
       cost: data.cost,
+      codigoProductoSin: data.codigoProductoSin,
       attributes: data.attributes,
     },
   });

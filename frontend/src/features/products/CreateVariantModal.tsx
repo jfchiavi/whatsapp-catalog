@@ -14,6 +14,7 @@ export function CreateVariantModal({
     sku: '',
     price: 0,
     cost: 0,
+    codigoProductoSin: '',
     attributes: {},
   });
 
@@ -31,7 +32,8 @@ export function CreateVariantModal({
   };
 
   const removeAttribute = (key: string) => {
-    const { [key]: _, ...rest } = form.attributes ?? {};
+    const rest = { ...form.attributes };
+    delete rest[key];
     setForm({ ...form, attributes: rest });
   };
 
@@ -61,6 +63,13 @@ export function CreateVariantModal({
           className="w-full border rounded p-2"
           value={form.cost || ''}
           onChange={(e) => setForm({ ...form, cost: Number(e.target.value) })}
+        />
+
+        <input
+          placeholder="Código producto SIN (FactElec, opcional)"
+          className="w-full border rounded p-2"
+          value={form.codigoProductoSin ?? ''}
+          onChange={(e) => setForm({ ...form, codigoProductoSin: e.target.value || null })}
         />
 
         <div className="space-y-2">

@@ -5,6 +5,7 @@ export type OrderContextLine = {
   description: string;
   quantity: number;
   unitPrice: number;
+  codigoProductoSin?: string | null;
 };
 
 export type OrderContext = {

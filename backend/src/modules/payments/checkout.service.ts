@@ -29,7 +29,8 @@ const toOrderContext = (
       variant: { product: { name: string } };
     }>;
   },
-  customerEmail: string
+  customerEmail: string,
+  customerNit?: string | null
 ): OrderContext => ({
   id: order.id,
   tenantId: order.tenantId,
@@ -37,7 +38,7 @@ const toOrderContext = (
   customerName: order.customerName,
   customerPhone: order.customerPhone,
   customerEmail,
-  customerNit: null,
+  customerNit: customerNit ?? null,
   lines: order.items.map((item) => ({
     sku: item.skuSnapshot,
     description: `${item.variant.product.name} (${item.skuSnapshot})`,
@@ -49,7 +50,8 @@ const toOrderContext = (
 export const initiateCheckout = async (
   tenantId: string,
   orderId: string,
-  customerEmail: string
+  customerEmail: string,
+  customerNit?: string
 ): Promise<CheckoutResult> => {
   const order = await prisma.order.findFirst({
     where: { id: orderId, tenantId },
@@ -94,13 +96,14 @@ export const initiateCheckout = async (
 
   const result = await PaymentContext.createPayment(
     tenantId,
-    toOrderContext(order, customerEmail)
+    toOrderContext(order, customerEmail, customerNit)
   );
 
   const updated = await prisma.order.update({
     where: { id: order.id },
     data: {
       customerEmail,
+      customerNit: customerNit ?? order.customerNit,
       gatewayTransactionId: result.gatewayTransactionId,
       gatewayStatus: 'initiated',
       gatewayQrUrl: result.qrUrl ?? null,

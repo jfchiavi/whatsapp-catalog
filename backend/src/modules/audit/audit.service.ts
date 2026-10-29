@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 
-export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE';
+export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'CONFIRM_FAILED' | 'BILLING_FAILED';
 
 const SENSITIVE_KEYS = new Set(['password', 'token', 'refreshToken', 'accessToken']);
 
