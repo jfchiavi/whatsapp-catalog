@@ -15,6 +15,48 @@ export type CheckoutResult = {
   gatewayStatus: string;
 };
 
+export type CheckoutStatusView = {
+  orderId: string;
+  status: string;
+  gatewayStatus: string | null;
+  qrUrl: string | null;
+  paymentUrl: string | null;
+  billingInvoiceId: string | null;
+  billingInvoiceUrl: string | null;
+};
+
+export const getCheckoutStatus = async (
+  tenantId: string,
+  orderId: string
+): Promise<CheckoutStatusView> => {
+  const order = await prisma.order.findFirst({
+    where: { id: orderId, tenantId },
+    select: {
+      id: true,
+      status: true,
+      gatewayStatus: true,
+      gatewayQrUrl: true,
+      gatewayPaymentUrl: true,
+      billingInvoiceId: true,
+      billingInvoiceUrl: true,
+    },
+  });
+
+  if (!order) {
+    throw new AppError('Order not found', 404, 'ORDER_NOT_FOUND');
+  }
+
+  return {
+    orderId: order.id,
+    status: order.status,
+    gatewayStatus: order.gatewayStatus,
+    qrUrl: order.gatewayQrUrl,
+    paymentUrl: order.gatewayPaymentUrl,
+    billingInvoiceId: order.billingInvoiceId,
+    billingInvoiceUrl: order.billingInvoiceUrl,
+  };
+};
+
 const toOrderContext = (
   order: {
     id: string;

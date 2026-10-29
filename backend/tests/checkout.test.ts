@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from '../src/lib/prisma';
 import { savePaymentConfig } from '../src/modules/payments/payment-config.service';
 import { POST as checkoutPOST } from '../src/app/api/checkout/route';
+import { GET as checkoutStatusGET } from '../src/app/api/checkout/[orderId]/route';
 
 describe('Checkout API', () => {
   const suffix = Date.now().toString();
@@ -279,5 +280,40 @@ describe('Checkout API', () => {
 
     const order = await prisma.order.findUnique({ where: { id: unreachableOrderId } });
     expect(order).toMatchObject({ gatewayStatus: null, customerEmail: null });
+  });
+
+  describe('checkout status endpoint', () => {
+    const getStatus = (tenantId: string | null, orderId: string) =>
+      checkoutStatusGET(
+        new NextRequest(`http://localhost/api/checkout/${orderId}`, {
+          headers: tenantId ? { 'X-Tenant-ID': tenantId } : {},
+        }),
+        { params: Promise.resolve({ orderId }) }
+      );
+
+    it('returns the payment status scoped to the tenant', async () => {
+      const response = await getStatus(tenantAId, orderMainId);
+      expect(response.status).toBe(200);
+
+      const body = await response.json();
+      expect(body.data).toMatchObject({
+        orderId: orderMainId,
+        status: 'pending',
+        gatewayStatus: 'initiated',
+        billingInvoiceUrl: null,
+      });
+      expect(body.data.qrUrl).toBeTruthy();
+      expect(body.data.paymentUrl).toBeTruthy();
+    });
+
+    it('hides orders from other tenants and requires the tenant header', async () => {
+      const crossTenant = await getStatus(tenantBId, orderMainId);
+      expect(crossTenant.status).toBe(404);
+      expect((await crossTenant.json()).error.code).toBe('ORDER_NOT_FOUND');
+
+      const noTenant = await getStatus(null, orderMainId);
+      expect(noTenant.status).toBe(401);
+      expect((await noTenant.json()).error.code).toBe('TENANT_REQUIRED');
+    });
   });
 });

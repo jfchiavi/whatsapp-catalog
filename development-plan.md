@@ -697,14 +697,30 @@ Confirmar pagos de forma desacoplada vía webhook global por gateway, con idempo
 
 Ofrecer en el checkout público las dos vías —pago en línea con QR Libélula o coordinación por WhatsApp— y mostrar el estado del pago y la factura al cliente.
 
+### Decisiones de contrato
+
+- El estado del pedido se consulta con `GET /api/checkout/:orderId` (público, `resolveTenant` por `X-Tenant-ID`), que devuelve solo `{ orderId, status, gatewayStatus, qrUrl, paymentUrl, billingInvoiceId, billingInvoiceUrl }` sin exponer el resto de la orden.
+- El QR/link se persisten en `Order.gatewayQrUrl`/`gatewayPaymentUrl` (Slice 8), por lo que el reintento y el tracking pueden redevolverlos sin repetir la llamada a Libélula.
+- Si el pedido ya se creó pero el pago falla, el formulario conserva el pedido y ofrece "Coordinar este pedido por WhatsApp" (el carrito ya fue consumido por `submitCart`).
+
 ### Checks de implementación
 
-- [ ] `frontend/src/services/checkout.api.ts` + hook `useCheckout`: `initiatePayment(orderId, customerEmail)` → datos de QR/link.
-- [ ] Componente de resultado de checkout: imagen QR desde `qr_simple_url`, link a `url_pasarela_pagos`, botón de copiar link y aviso si la deuda expira.
-- [ ] `CartSummary`: bifurcar el CTA en "Pagar en línea ahora" (crea orden + checkout) y "Coordinar pedido por WhatsApp" (flujo actual intacto, sin regresiones).
-- [ ] Consulta de estado de la orden para el cliente (tracking mínimo: pendiente de pago → pagado → factura disponible con enlace `billingInvoiceUrl`).
-- [ ] Estados de error/timeout: pasarela no configurada, orden no pagable, fallo del gateway.
-- [ ] `npm run build` y ESLint del frontend sin errores.
+- [x] `frontend/src/services/checkout.api.ts` + hook `useCheckout` (`hooks/useCheckout.ts`): `initiatePayment(tenantId, orderId, customerEmail, customerNit?)` con header `X-Tenant-ID` y timeout de 20s → datos de QR/link; `useCheckoutStatus` con `refetchInterval` de 5s mientras `gatewayStatus === 'initiated'`.
+- [x] Componente de resultado de checkout (`components/cart/CheckoutResult.tsx`): imagen QR desde `qrUrl` (la pasarela lo llama `qr_simple_url`), link a `paymentUrl` (`url_pasarela_pagos`), botón "Copiar enlace de pago", aviso de expiración del QR/enlace y estado con badge (pendiente/confirmado/fallido/cancelado).
+- [x] `CartSummary` bifurcado en "Pagar en línea ahora" (crea orden + checkout + resultado) y "Coordinar pedido por WhatsApp" (flujo previo intacto: formulario, `submitOrder`, abre `wa.me` y cierra), con pasos, "Volver" y estados de carga.
+- [x] Consulta de estado de la orden para el cliente vía `GET /api/checkout/:orderId` (`checkout.service.getCheckoutStatus`): pendiente de pago → pagado → factura disponible con enlace `billingInvoiceUrl`.
+- [x] Estados de error/timeout: `describeCheckoutError` mapea `PAYMENT_NOT_CONFIGURED`, `ORDER_NOT_PAYABLE`, `ORDER_ALREADY_PAID`, `ORDER_NOT_FOUND`, `CUSTOMER_EMAIL_REQUIRED`, `GATEWAY_ERROR`, `GATEWAY_UNREACHABLE`, `VALIDATION_ERROR`, timeout (`ECONNABORTED`) y fallo de red; se muestran en el formulario con opción de reintentar.
+- [x] `npm run build` y ESLint del frontend sin errores.
+
+#### Tests (endpoint de estado agregado al slice)
+
+- [x] `tests/checkout.test.ts`: estado devuelto acotado al tenant (`qrUrl`/`paymentUrl` presentes tras el registro), `404` cross-tenant y `401` sin header (10 pruebas en el archivo).
+
+### Verificación ejecutada
+
+- `npx vitest run` backend: 15 archivos, 129 pruebas pasan; `tsc --noEmit` y ESLint sin errores; `npm run build` con `/api/checkout` y `/api/checkout/[orderId]`.
+- Frontend: `npm run build` (Vite) y ESLint focalizado sin errores.
+- Docker (imágenes backend+frontend reconstruidas): `GET /api/checkout/:id` sin tenant → `401`, orden inexistente → `404 ORDER_NOT_FOUND`.
 
 ### Checks de validación manual
 
@@ -754,9 +770,9 @@ Actualizar esta sección después de cada sesión de trabajo. `[x]` requiere evi
 - [x] Slice 7 completo (arquitectura Strategy de pagos y facturación: interfaces, contexts, registry y 8 tests con estrategias fake; validación manual pendiente)
 - [x] Slice 8 completo (checkout con Libélula: estrategia, `POST /api/checkout`, idempotencia y 8 tests con fetch mockeado; validación sandbox manual pendiente)
 - [x] Slice 9 completo (webhook idempotente + `FactElecBillingStrategy` + `codigoProductoSin`/`customerNit`/`Sale.userId` nullable y 6 tests; validación con sandbox pendiente)
-- [ ] Slice 10 completo (frontend de checkout y estado de pago)
+- [x] Slice 10 completo (frontend de checkout y estado de pago: bifurcación del CTA, resultado con QR/link/copia, tracking público y mapeo de errores; validación manual sandbox pendiente)
 - [ ] Slice 11 completo (conciliación y consulta de pagos — posterior)
-- [ ] Próximo slice activo: Slice 10 (frontend de checkout: `checkout.api.ts`/`useCheckout`, bifurcación del CTA en CartSummary y tracking de estado de pago); pendientes de usuario: confirmar validación manual del Slice 6, sandbox de Libélula (Slice 8) y webhook/FactElec (Slice 9), y resolver el drift histórico de `prisma migrate dev`. Validación manual de Slices 0–5 en Docker pendiente. SEO y analítica avanzada quedan para el tramo final
-- [x] Última actualización: Slice 9 implementado — webhook `GET /api/webhooks/payments/:gateway` con claim idempotente, confirmación de orden reutilizando `confirmOrder` (venta sin usuario → `Sale.userId` nullable), facturación FactElec asíncrona con `AuditLog(BILLING_FAILED)` como reintento, `Variant.codigoProductoSin` y `Order.customerNit` (migración `add_billing_webhook_fields`, 10 migraciones), formularios de variante actualizados, 6 tests nuevos (127 totales), builds/lint OK y smoke en Docker
+- [ ] Próximo slice activo: Slice 11 (conciliación: `consultar_pagos` por rango, botón "Sincronizar pago" en detalle de orden, UI de conciliación con export CSV); pendientes de usuario: confirmar validación manual del Slice 6, sandbox de Libélula (Slices 8–10) y webhook/FactElec (Slice 9), verificar en navegador que el flujo WhatsApp no regresó, y resolver el drift histórico de `prisma migrate dev`. Validación manual de Slices 0–5 en Docker pendiente. SEO y analítica avanzada quedan para el tramo final
+- [x] Última actualización: Slice 10 implementado — `checkout.api.ts`/`useCheckout` (polling 5s mientras `initiated`), `CheckoutResult` con QR, link, copia y badge de estado, `CartSummary` bifurcado (pago en línea vs. WhatsApp con fallback si el pago falla tras crear la orden), endpoint público `GET /api/checkout/:orderId` + 2 tests (129 totales), builds/lint OK y smoke en Docker
 
 Cuando el usuario solicite **"Actualizar progreso"**, comparar este checklist con el código actual y con la evidencia proporcionada. Cuando solicite **"Continuar con el Slice #"**, trabajar únicamente en ese slice, mantener los contratos anteriores y actualizar esta sección al terminar.
